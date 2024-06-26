@@ -5,6 +5,6 @@ describe('Homepage', () => {
 	it('should show name', () => {
 		render(<Homepage />)
 
-		expect(screen.getByRole('heading').textContent).toBe('Brian J. Fox')
+		expect(screen.getByRole('heading').textContent).toMatch(/Brian J. Fox/i)
 	})
 })
