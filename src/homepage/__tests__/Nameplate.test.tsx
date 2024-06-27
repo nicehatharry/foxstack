@@ -8,6 +8,6 @@ test('renders header with navigation links', () => {
 		screen.getByRole('heading', { name: /Brian J\. Fox/i })
 	).toBeInTheDocument()
 	expect(
-		screen.getByText(/web developer using react with typescript/i)
+		screen.getByText(/building cloud integrated solutions/i)
 	).toBeInTheDocument()
 })

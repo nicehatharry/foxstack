@@ -1,5 +1,7 @@
 body {
 	font-family: 'Roboto', sans-serif;
+	letter-spacing: 2.5px;
 	margin: 0;
 	padding: 0;
+	text-transform: uppercase;
 }

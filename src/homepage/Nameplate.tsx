@@ -20,6 +20,7 @@ export const Landing: React.FC = () => {
 const HeroImage = styled('img')({
 	position: 'absolute',
 	width: '100%',
+	zIndex: '-1',
 })
 
 const LandingStyles = styled('div')({
@@ -28,22 +29,17 @@ const LandingStyles = styled('div')({
 })
 
 const Name = styled('h1')({
-	fontSize: '48px',
+	fontSize: '60px',
 	fontWeight: '300',
-	letterSpacing: '2.5px',
 })
 
 const Nameplate = styled('div')({
 	background: 'rgba(0,0,0,0.4)',
-	color: '#EEE',
+	color: 'rgba(255,255,255,0.85)',
 	marginTop: '66vh',
 	padding: '48px',
 	textAlign: 'center',
-	textTransform: 'uppercase',
 	width: '100vw',
-	zIndex: '1',
 })
 
-const Summary = styled('p')({
-	letterSpacing: '2.5px',
-})
+const Summary = styled('p')({})
