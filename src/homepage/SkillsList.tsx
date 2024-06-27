@@ -12,7 +12,7 @@ export const ITEMS = [
 	'Culture Building and Communication',
 ]
 
-const SkillsList: React.FC = () => {
+export const SkillsList: React.FC = () => {
 	return (
 		<SkillsListStyles>
 			<SkillsHeader>ways we can work together</SkillsHeader>

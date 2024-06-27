@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import SkillsList, { ITEMS } from '../SkillsList'
+import { SkillsList, ITEMS } from '../SkillsList'
 
 test('renders list items correctly', () => {
 	const items = ITEMS
