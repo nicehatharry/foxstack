@@ -30,8 +30,8 @@ export const Connect = () => {
 
 const ConnectIcons = styled('div')({
 	display: 'flex',
-	columnGap: '20px',
-	margin: '20px',
+	columnGap: '1.5rem',
+	margin: '1.5rem',
 })
 
 const ConnectStyles = styled('div')({
@@ -42,5 +42,5 @@ const ConnectStyles = styled('div')({
 
 const PersonalImage = styled('img')({
 	borderRadius: '50%',
-	width: '150px',
+	width: '10rem',
 })

@@ -18,28 +18,23 @@ export const SkillsList: React.FC = () => {
 			<SkillsHeader>ways we can work together</SkillsHeader>
 			<CodingIcons />
 			{ITEMS.map((item) => (
-				<SkillsItem>{item}</SkillsItem>
+				<SkillsItem key={item}>{item}</SkillsItem>
 			))}
 		</SkillsListStyles>
 	)
 }
 
-export default SkillsList
-
 const SkillsHeader = styled('p')({
-	margin: '12px ',
+	margin: '1rem ',
 })
 
 const SkillsItem = styled('p')({
-	fontSize: '18px',
-	margin: '12px',
+	fontSize: '1rem',
+	margin: '1.5rem',
 })
 
 const SkillsListStyles = styled('div')({
-	alignItems: 'center',
-	background: '#FFF',
-	display: 'flex',
-	flexDirection: 'column',
-	fontSize: '24px',
-	padding: '24px 0',
+	textAlign: 'center',
+	fontSize: '1.5rem',
+	padding: '2rem 0',
 })

@@ -26,14 +26,12 @@ const CodingIcons: React.FC = () => {
 export default CodingIcons
 
 const CodingIcon = styled('img')({
-	height: '64px',
-	margin: '12px',
-	width: '64px',
+	height: '5rem',
+	margin: '1rem',
+	width: '5rem',
 })
 
 const CodingIconsStyles = styled('div')({
 	background: '#FFF',
-	display: 'flex',
-	justifyContent: 'center',
-	padding: '24px',
+	padding: '2rem',
 })

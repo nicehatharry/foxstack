@@ -5,7 +5,6 @@ import apexFinch from '../assets/apexFinch.jpg'
 export const Landing: React.FC = () => {
 	return (
 		<LandingStyles>
-			<HeroImage src={apexFinch} />
 			<Nameplate>
 				<Name>Brian J. Fox</Name>
 				<Summary>
@@ -13,33 +12,42 @@ export const Landing: React.FC = () => {
 					Python, SQL and more
 				</Summary>
 			</Nameplate>
+			<TransparencyOut />
 		</LandingStyles>
 	)
 }
 
-const HeroImage = styled('img')({
-	position: 'absolute',
-	width: '100%',
-	zIndex: '-1',
-})
-
 const LandingStyles = styled('div')({
+	backgroundImage: `url(${apexFinch})`,
 	display: 'flex',
+	height: '100vh',
 	position: 'relative',
 })
 
 const Name = styled('h1')({
-	fontSize: '60px',
+	marginTop: '3rem',
+	fontSize: '3rem',
 	fontWeight: '300',
 })
 
 const Nameplate = styled('div')({
 	background: 'rgba(0,0,0,0.4)',
+	bottom: '5rem',
 	color: 'rgba(255,255,255,0.85)',
-	marginTop: '66vh',
-	padding: '48px',
+	position: 'absolute',
+	width: '100%',
 	textAlign: 'center',
-	width: '100vw',
 })
 
-const Summary = styled('p')({})
+const Summary = styled('p')({
+	fontSize: '1rem',
+	margin: '0 1.5rem 3rem',
+})
+
+const TransparencyOut = styled('div')({
+	position: 'absolute',
+	background: 'linear-gradient(rgba(255,255,255,0), rgba(255,255,255,1))',
+	bottom: 0,
+	height: '15vh',
+	width: '100%',
+})
