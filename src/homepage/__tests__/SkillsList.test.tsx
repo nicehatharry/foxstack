@@ -5,9 +5,8 @@ test('renders list items correctly', () => {
 	const items = ITEMS
 	render(<SkillsList />)
 
-	const allItems = screen.getAllByRole('paragraph')
-	const header = allItems[0]
-	const listItems = allItems.slice(1)
+	const header = screen.getByRole('paragraph')
+	const listItems = screen.getAllByRole('listitem')
 
 	expect(header).toHaveTextContent(/ways we can work together/i)
 

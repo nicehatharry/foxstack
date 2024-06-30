@@ -1,6 +1,6 @@
-import { styled } from '@mui/material/styles'
 import React from 'react'
-import CodingIcons from './CodingIcons'
+import { CodingIcons } from './CodingIcons'
+import { skillsList, skillsListHeader, skillsListItem } from './styles'
 
 export const ITEMS = [
 	'React with Typescript, Python, SQL',
@@ -14,27 +14,14 @@ export const ITEMS = [
 
 export const SkillsList: React.FC = () => {
 	return (
-		<SkillsListStyles>
-			<SkillsHeader>ways we can work together</SkillsHeader>
+		<ul className={skillsList}>
+			<p className={skillsListHeader}>ways we can work together</p>
 			<CodingIcons />
 			{ITEMS.map((item) => (
-				<SkillsItem key={item}>{item}</SkillsItem>
+				<li className={skillsListItem} key={item}>
+					{item}
+				</li>
 			))}
-		</SkillsListStyles>
+		</ul>
 	)
 }
-
-const SkillsHeader = styled('p')({
-	margin: '1rem ',
-})
-
-const SkillsItem = styled('p')({
-	fontSize: '1rem',
-	margin: '1.5rem',
-})
-
-const SkillsListStyles = styled('div')({
-	textAlign: 'center',
-	fontSize: '1.5rem',
-	padding: '2rem 0',
-})

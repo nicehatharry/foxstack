@@ -1,24 +1,15 @@
-import { styled } from '@mui/material/styles'
 import { Landing } from './Nameplate'
 import { Connect } from './Connect'
 import { SkillsList } from './SkillsList'
+import { bottomSpace, centeredHomepage } from './styles'
 
 export const Homepage = () => {
 	return (
-		<StyledColumn>
+		<div className={centeredHomepage}>
 			<Landing />
 			<SkillsList />
 			<Connect />
-			<BottomSpace />
-		</StyledColumn>
+			<div className={bottomSpace} />
+		</div>
 	)
 }
-
-const BottomSpace = styled('div')({
-	height: '25vh',
-})
-
-const StyledColumn = styled('div')({
-	width: '100vw',
-	maxWidth: '1400px',
-})

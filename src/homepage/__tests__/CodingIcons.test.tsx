@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import CodingIcons from '../CodingIcons'
+import { CodingIcons } from '../CodingIcons'
 
 it('renders programming icons', () => {
 	render(<CodingIcons />)

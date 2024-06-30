@@ -4,9 +4,10 @@ import { Connect } from '../Connect'
 test('should render connection links', () => {
 	render(<Connect />)
 
-	expect(screen.getByRole('link', { name: 'email link' })).toBeInTheDocument()
-	expect(screen.getByRole('link', { name: 'github link' })).toBeInTheDocument()
 	expect(
-		screen.getByRole('link', { name: 'linkedIn link' })
+		screen.getByRole('img', { name: /photo of Brian/i })
 	).toBeInTheDocument()
+	expect(screen.getByRole('link', { name: /email/i })).toBeInTheDocument()
+	expect(screen.getByRole('link', { name: /github/i })).toBeInTheDocument()
+	expect(screen.getByRole('link', { name: /linkedIn/i })).toBeInTheDocument()
 })

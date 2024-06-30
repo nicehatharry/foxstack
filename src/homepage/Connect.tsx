@@ -1,9 +1,8 @@
-import { styled } from '@mui/material/styles'
-
 import personalImage from '../assets/dumpstar.jpg'
 import githubIcon from '../assets/githubIcon.svg'
 import linkedinIcon from '../assets/linkedinIcon.svg'
 import mailIcon from '../assets/mailIcon.svg'
+import { connectStyles, personalImageStyles, connectIcons } from './styles'
 
 const email = 'mailto:bfox.fullstack@protonmail.com'
 const githubUrl = 'https://github.com/nicehatharry'
@@ -11,36 +10,23 @@ const linkedinUrl = 'https://www.linkedin.com/in/brian-j-fox-818174a/'
 
 export const Connect = () => {
 	return (
-		<ConnectStyles>
-			<PersonalImage src={personalImage} alt='photo of Brian Fox' />
-			<ConnectIcons>
+		<div className={connectStyles}>
+			<img
+				className={personalImageStyles}
+				src={personalImage}
+				alt='photo of Brian Fox'
+			/>
+			<div className={connectIcons}>
 				<a href={email} target='#'>
-					<img src={mailIcon} />
+					<img src={mailIcon} alt='send Brian an email' />
 				</a>
 				<a href={githubUrl} target='#'>
-					<img src={githubIcon} />
+					<img src={githubIcon} alt="Brian's Github" />
 				</a>
 				<a href={linkedinUrl} target='#'>
-					<img src={linkedinIcon} />
+					<img src={linkedinIcon} alt="Brian's LinkedIn" />
 				</a>
-			</ConnectIcons>
-		</ConnectStyles>
+			</div>
+		</div>
 	)
 }
-
-const ConnectIcons = styled('div')({
-	display: 'flex',
-	columnGap: '1.5rem',
-	margin: '1.5rem',
-})
-
-const ConnectStyles = styled('div')({
-	display: 'flex',
-	alignItems: 'center',
-	flexDirection: 'column',
-})
-
-const PersonalImage = styled('img')({
-	borderRadius: '50%',
-	width: '10rem',
-})
