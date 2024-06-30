@@ -1,12 +1,9 @@
 import { render, screen } from '@testing-library/react'
-import { Connect } from '../Connect'
+import { ConnectIcons } from '../ConnectIcons'
 
 test('should render connection links', () => {
-	render(<Connect />)
+	render(<ConnectIcons />)
 
-	expect(
-		screen.getByRole('img', { name: /photo of Brian/i })
-	).toBeInTheDocument()
 	expect(screen.getByRole('link', { name: /email/i })).toBeInTheDocument()
 	expect(screen.getByRole('link', { name: /github/i })).toBeInTheDocument()
 	expect(screen.getByRole('link', { name: /linkedIn/i })).toBeInTheDocument()

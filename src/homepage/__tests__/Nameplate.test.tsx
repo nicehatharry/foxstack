@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { Landing } from '../Nameplate'
+import { Landing } from '../Landing'
 
 test('renders header with navigation links', () => {
 	render(<Landing />)

@@ -1,6 +1,9 @@
 import React from 'react'
+import apexFinch from '../assets/apexFinch.jpg'
 import {
 	landingStyles,
+	littleFinch,
+	mobileLanding,
 	name,
 	nameplate,
 	summary,
@@ -10,6 +13,9 @@ import {
 export const Landing: React.FC = () => {
 	return (
 		<div className={landingStyles}>
+			<div className={mobileLanding}>
+				<img className={littleFinch} src={apexFinch} />
+			</div>
 			<div className={nameplate}>
 				<h1 className={name}>Brian J. Fox</h1>
 				<p className={summary}>

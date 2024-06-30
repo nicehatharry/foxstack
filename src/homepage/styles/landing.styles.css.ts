@@ -2,10 +2,32 @@ import { style } from '@vanilla-extract/css'
 import apexFinch from '../../assets/apexFinch.jpg'
 
 export const landingStyles = style({
-	backgroundImage: `url(${apexFinch})`,
 	display: 'flex',
 	height: '100vh',
 	position: 'relative',
+	width: '100%',
+	'@media': {
+		'screen and (min-width: 650px)': {
+			backgroundImage: `url(${apexFinch})`,
+		},
+	},
+})
+
+export const littleFinch = style({
+	borderRadius: '50%',
+	height: '10rem',
+})
+
+export const mobileLanding = style({
+	display: 'flex',
+	alignItems: 'center',
+	justifyContent: 'center',
+	width: '100%',
+	'@media': {
+		'screen and (min-width: 650px)': {
+			display: 'none',
+		},
+	},
 })
 
 export const name = style({
