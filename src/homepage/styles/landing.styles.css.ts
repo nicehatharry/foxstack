@@ -9,6 +9,7 @@ export const landingStyles = style({
 	'@media': {
 		'screen and (min-width: 650px)': {
 			backgroundImage: `url(${apexFinch})`,
+			maxHeight: 1000,
 		},
 	},
 })
