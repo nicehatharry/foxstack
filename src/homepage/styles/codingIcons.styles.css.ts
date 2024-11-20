@@ -8,5 +8,6 @@ export const codingIcon = style({
 
 export const codingIconsStyles = style({
 	background: '#FFF',
+	maxWidth: '35rem',
 	padding: '2rem',
 })

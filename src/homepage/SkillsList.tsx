@@ -3,10 +3,10 @@ import { CodingIcons } from './CodingIcons'
 import { skillsList, skillsListHeader, skillsListItem } from './styles'
 
 export const ITEMS = [
-	'React with Typescript, Python, SQL',
-	'GCS and other Cloud Services Integration',
+	'React with Typescript, C#, Java, Python, SQL',
+	'Cloud Services Integration',
 	'Web UI Architecture and Development',
-	'API Architecture and Development',
+	'API Design and Construction',
 	'Test-Driven Development',
 	'Documentation and DX',
 	'Culture Building and Communication',

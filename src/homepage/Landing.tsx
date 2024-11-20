@@ -19,8 +19,8 @@ export const Landing: React.FC = () => {
 			<div className={nameplate}>
 				<h1 className={name}>Brian J. Fox</h1>
 				<p className={summary}>
-					Building cloud integrated solutions using React with Typescript,
-					Python, SQL and more
+					Building cloud integrated solutions using React with Typescript, C#,
+					Java, Python, SQL and more
 				</p>
 			</div>
 			<div className={transparencyOut} />

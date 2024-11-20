@@ -1,11 +1,16 @@
 import React from 'react'
-import pythonIcon from '../assets/python.svg'
-import reactIcon from '../assets/react.svg'
-import typescriptIcon from '../assets/typescript.svg'
-import postgresqlIcon from '../assets/postgresql.svg'
-import awsIcon from '../assets/aws.svg'
-import googlecloudIcon from '../assets/googlecloud.svg'
 import { codingIcon, codingIconsStyles } from './styles'
+import {
+	awsIcon,
+	azureIcon,
+	cSharpIcon,
+	googleCloudIcon,
+	javaIcon,
+	postgresqlIcon,
+	pythonIcon,
+	reactIcon,
+	typescriptIcon,
+} from '../assets'
 
 export const CodingIcons: React.FC = () => {
 	return (
@@ -22,6 +27,12 @@ export const CodingIcons: React.FC = () => {
 			/>
 			<img
 				className={codingIcon}
+				src={cSharpIcon}
+				alt='C-Sharp Coding Language'
+			/>
+			<img className={codingIcon} src={javaIcon} alt='Java Coding Language' />
+			<img
+				className={codingIcon}
 				src={pythonIcon}
 				alt='Python Programming Language'
 			/>
@@ -32,13 +43,14 @@ export const CodingIcons: React.FC = () => {
 			/>
 			<img
 				className={codingIcon}
-				src={googlecloudIcon}
-				alt='Google Cloud Services Integration'
+				src={googleCloudIcon}
+				alt='Google Cloud Services'
 			/>
+			<img className={codingIcon} src={awsIcon} alt='Amazon Web Services' />
 			<img
 				className={codingIcon}
-				src={awsIcon}
-				alt='Amazon Web Services Integration'
+				src={azureIcon}
+				alt='Microsoft Azure Web Services'
 			/>
 		</div>
 	)
