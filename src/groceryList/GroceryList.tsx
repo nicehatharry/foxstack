@@ -235,16 +235,6 @@ const QtyBadge = styled.span`
   font-family: 'Georgia', serif;
 `;
 
-const DeptTag = styled.span`
-  background: #1a1a1a;
-  color: #c8f59e;
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  margin-left: 4px;
-`;
-
 const ActionRow = styled.div`
   display: flex;
   gap: 6px;

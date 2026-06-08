@@ -1,6 +1,6 @@
 import { Homepage } from './homepage'
 import './baseStyles.css'
-import { Link, Route, Switch } from "wouter"
+import { Route, Switch } from "wouter"
 import GroceryList from './groceryList/GroceryList'
 
 const App = () => (
