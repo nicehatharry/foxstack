@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, ChangeEvent, FormEvent } from 'react';
 import styled, { createGlobalStyle, keyframes, css } from 'styled-components';
-import { loadList, saveList, getRemoteEtag, type SyncStatus } from '../services/s3Storage';
-import type { GroceryItem } from '../services/s3Storage';
 
 // --- Global Style ---
 
@@ -18,7 +16,16 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-// --- Types (GroceryItem is imported from s3Storage) ---
+// --- Types ---
+
+interface GroceryItem {
+  id: string;
+  item: string;
+  store: string;
+  department: string;
+  quantity: number;
+  acquired: boolean;
+}
 
 interface FormData {
   item: string;
@@ -92,64 +99,6 @@ const StatsRow = styled.div`
 
 const StatChip = styled.span<{ $highlight?: boolean }>`
   color: ${p => p.$highlight ? '#c8f59e' : '#a0a0a0'};
-`;
-
-// Sync status indicator — lives in the TopBar
-const SyncBar = styled.div<{ $status: SyncStatus }>`
-  display: ${p => p.$status === 'idle' ? 'none' : 'flex'};
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${p => {
-    if (p.$status === 'error' || p.$status === 'conflict') return '#ff8a80';
-    if (p.$status === 'saving') return '#c8f59e';
-    return '#a0a0a0'; // loading
-  }};
-  transition: color 0.2s ease;
-`;
-
-const SyncDot = styled.span<{ $status: SyncStatus }>`
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  flex-shrink: 0;
-  animation: ${p =>
-    (p.$status === 'saving' || p.$status === 'loading')
-      ? css`${keyframes`0%,100%{opacity:1}50%{opacity:0.2}`} 1s ease-in-out infinite`
-      : 'none'
-  };
-`;
-
-// Conflict / error banner that sits below the filter bar
-const AlertBanner = styled.div<{ $variant: 'conflict' | 'error' }>`
-  background: ${p => p.$variant === 'conflict' ? '#fff3e0' : '#fff0f0'};
-  border-bottom: 1px solid ${p => p.$variant === 'conflict' ? '#ffe0b2' : '#ffd5d5'};
-  padding: 10px 16px;
-  font-size: 12px;
-  font-family: 'Georgia', serif;
-  color: ${p => p.$variant === 'conflict' ? '#e65100' : '#c62828'};
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-`;
-
-const AlertAction = styled.button`
-  background: none;
-  border: none;
-  font-size: 11px;
-  font-family: 'Georgia', serif;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  color: inherit;
-  text-decoration: underline;
-  padding: 0;
-  flex-shrink: 0;
 `;
 
 // --- Filters ---
@@ -706,13 +655,6 @@ const SortBtn = styled.button<{ $active: boolean }>`
 
 // --- Main Component ---
 
-// How often to poll S3 for changes from other users (milliseconds).
-const POLL_INTERVAL_MS = 30_000;
-
-// Debounce delay before flushing local changes to S3 (milliseconds).
-// Prevents a PUT per keystroke during rapid edits.
-const SAVE_DEBOUNCE_MS = 600;
-
 const GroceryList: React.FC = () => {
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [formData, setFormData] = useState<FormData>({
@@ -724,115 +666,18 @@ const GroceryList: React.FC = () => {
   const [filterDept, setFilterDept] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<'All' | 'Acquired' | 'Pending'>('All');
 
-  // S3 sync state
-  const [syncStatus, setSyncStatus]   = useState<SyncStatus>('loading');
-  const [alert, setAlert]             = useState<'conflict' | 'error' | null>(null);
-
-  // Refs for S3 coordination — not part of render state
-  const etagRef        = useRef<string>('');   // ETag of the version we last read/wrote
-  const saveTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pollTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Track items in a ref so the debounced save closure always sees the latest value
-  const itemsRef       = useRef<GroceryItem[]>([]);
-  const isSavingRef    = useRef(false);        // guard against overlapping PUTs
-
   const departments = ['Produce', 'Dairy', 'Bakery', 'Meat', 'Fish', 'Frozen', 'Pantry', 'Household'];
 
-  // -------------------------------------------------------------------------
-  // S3 load
-  // -------------------------------------------------------------------------
-
-  const fetchList = useCallback(async () => {
-    setSyncStatus('loading');
-    setAlert(null);
+  useEffect(() => {
     try {
-      const { items: loaded, etag } = await loadList();
-      etagRef.current = etag;
-      setItems(loaded);
-      itemsRef.current = loaded;
-      setSyncStatus('idle');
-    } catch {
-      setSyncStatus('error');
-      setAlert('error');
-    }
+      const saved = localStorage.getItem('groceryList');
+      if (saved) setItems(JSON.parse(saved));
+    } catch {}
   }, []);
 
-  // Initial load on mount
   useEffect(() => {
-    fetchList();
-  }, [fetchList]);
-
-  // -------------------------------------------------------------------------
-  // S3 save — debounced, ETag-guarded
-  // -------------------------------------------------------------------------
-
-  const persistItems = useCallback((nextItems: GroceryItem[]) => {
-    // Always update the ref so the scheduled flush sees the latest list
-    itemsRef.current = nextItems;
-
-    // Clear any pending flush and schedule a new one
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    setSyncStatus('saving');
-
-    saveTimerRef.current = setTimeout(async () => {
-      if (isSavingRef.current) return; // a save is already in flight
-      isSavingRef.current = true;
-      try {
-        const result = await saveList(itemsRef.current, etagRef.current);
-        if (result.conflict) {
-          // Another user wrote to S3 between our last read and this write.
-          // Reload the latest version and surface a conflict banner.
-          setSyncStatus('conflict');
-          setAlert('conflict');
-          await fetchList();
-        } else {
-          etagRef.current = result.etag;
-          setSyncStatus('idle');
-        }
-      } catch {
-        setSyncStatus('error');
-        setAlert('error');
-      } finally {
-        isSavingRef.current = false;
-      }
-    }, SAVE_DEBOUNCE_MS);
-  }, [fetchList]);
-
-  // -------------------------------------------------------------------------
-  // Polling — HEAD requests to detect remote changes cheaply
-  // -------------------------------------------------------------------------
-
-  useEffect(() => {
-    pollTimerRef.current = setInterval(async () => {
-      // Skip poll while a save is in flight to avoid a false conflict signal
-      if (isSavingRef.current || saveTimerRef.current) return;
-      try {
-        const remoteEtag = await getRemoteEtag();
-        if (remoteEtag && remoteEtag !== etagRef.current) {
-          await fetchList();
-        }
-      } catch {
-        // Silently ignore poll errors — the user isn't waiting on a poll
-      }
-    }, POLL_INTERVAL_MS);
-
-    return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, [fetchList]);
-
-  // -------------------------------------------------------------------------
-  // Wrap every state mutation to also trigger a debounced S3 save
-  // -------------------------------------------------------------------------
-
-  const updateItems = useCallback((updater: (prev: GroceryItem[]) => GroceryItem[]) => {
-    setItems(prev => {
-      const next = updater(prev);
-      persistItems(next);
-      return next;
-    });
-  }, [persistItems]);
+    localStorage.setItem('groceryList', JSON.stringify(items));
+  }, [items]);
 
   const resetForm = () => {
     setFormData({ item: '', store: '', department: 'Produce', quantity: 1, acquired: false });
@@ -862,23 +707,21 @@ const GroceryList: React.FC = () => {
     if (!formData.item.trim()) return;
 
     if (editingId) {
-      updateItems(prev =>
-        prev.map(i => i.id === editingId ? { ...formData, id: editingId, quantity: Number(formData.quantity) } : i)
-      );
+      setItems(items.map(i => i.id === editingId ? { ...formData, id: editingId, quantity: Number(formData.quantity) } : i));
     } else {
       const newItem: GroceryItem = { ...formData, acquired: false, id: Date.now().toString(), quantity: Number(formData.quantity) };
-      updateItems(prev => [...prev, newItem]);
+      setItems(prev => [...prev, newItem]);
     }
     handleClose();
   };
 
   const handleDelete = (id: string) => {
-    updateItems(prev => prev.filter(i => i.id !== id));
+    setItems(items.filter(i => i.id !== id));
     if (editingId === id) handleClose();
   };
 
   const toggleAcquired = (id: string) => {
-    updateItems(prev => prev.map(i => i.id === id ? { ...i, acquired: !i.acquired } : i));
+    setItems(items.map(i => i.id === id ? { ...i, acquired: !i.acquired } : i));
   };
 
   const handleSort = (key: keyof GroceryItem) => {
@@ -933,13 +776,6 @@ const GroceryList: React.FC = () => {
             <StatChip $highlight>{stats.acquired} acquired</StatChip>
             <StatChip>{stats.total - stats.acquired} remaining</StatChip>
           </StatsRow>
-          <SyncBar $status={syncStatus}>
-            <SyncDot $status={syncStatus} />
-            {syncStatus === 'saving'   && 'Saving…'}
-            {syncStatus === 'loading'  && 'Loading…'}
-            {syncStatus === 'error'    && 'Save failed'}
-            {syncStatus === 'conflict' && 'Refreshing…'}
-          </SyncBar>
         </TopBar>
 
         {/* Department filters */}
@@ -950,20 +786,6 @@ const GroceryList: React.FC = () => {
             </FilterPill>
           ))}
         </FilterBar>
-
-        {/* Conflict / error alerts */}
-        {alert === 'conflict' && (
-          <AlertBanner $variant="conflict">
-            List was updated by another user — showing latest version.
-            <AlertAction onClick={() => setAlert(null)}>Dismiss</AlertAction>
-          </AlertBanner>
-        )}
-        {alert === 'error' && (
-          <AlertBanner $variant="error">
-            Could not reach the server.
-            <AlertAction onClick={fetchList}>Retry</AlertAction>
-          </AlertBanner>
-        )}
 
         {/* Status + Sort */}
         <SortBar>
