@@ -1,6 +1,38 @@
+/**
+ * src/services/s3Storage.ts
+ *
+ * All S3 I/O lives here. The component never touches the AWS SDK directly.
+ *
+ * Design decisions:
+ *
+ * 1. CREDENTIALS — Cognito authenticated identities.
+ *    fetchAuthSession() (Amplify v6) returns the signed-in user's ID token.
+ *    That token is passed as the `logins` key to fromCognitoIdentityPool(),
+ *    which exchanges it for short-lived STS credentials scoped to the
+ *    authenticated IAM role. No API keys are ever embedded in client code.
+ *
+ * 2. S3 CLIENT CACHING BY TOKEN — The S3 client cannot be a module-level
+ *    singleton because the Cognito ID token changes on each session refresh
+ *    (typically every hour). We cache the client by token string:
+ *      - Same token → reuse the existing client (and its cached STS creds).
+ *      - New token   → build a fresh client with the updated login key.
+ *    fetchAuthSession() is called before every S3 operation; Amplify handles
+ *    JWT refresh transparently so we always get a valid token.
+ *
+ * 3. SHARED DATA / CONCURRENCY — one canonical document at a fixed S3 key.
+ *    ETag-based optimistic locking:
+ *      - GET returns the current ETag alongside the data.
+ *      - PUT sends `IfMatch: <etag>`. If another user saved in the meantime,
+ *        S3 returns 412 Precondition Failed → caller gets { conflict: true }.
+ *
+ * 4. POLLING — getRemoteEtag() issues a cheap HEAD request (no data transfer)
+ *    to detect remote changes. The component polls on an interval and reloads
+ *    when the ETag diverges from the last known value.
+ */
 
 import { S3Client, GetObjectCommand, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { fromCognitoIdentityPool } from '@aws-sdk/credential-provider-cognito-identity';
+import { fetchAuthSession } from 'aws-amplify/auth';
 import { awsConfig } from '../config/aws';
 
 // ---------------------------------------------------------------------------
@@ -24,24 +56,53 @@ export interface LoadResult {
 }
 
 export interface SaveResult {
-  etag: string;         // ETag of the object we just wrote
-  conflict: boolean;    // true when S3 returned 412 (someone else saved first)
+  etag: string;       // ETag of the object we just wrote
+  conflict: boolean;  // true when S3 returned 412 (someone else saved first)
 }
 
 // ---------------------------------------------------------------------------
-// S3 client (singleton)
+// S3 client — cached by ID token string
 // ---------------------------------------------------------------------------
 
-// Credentials are lazily resolved and auto-refreshed by the SDK.
-const credentials = fromCognitoIdentityPool({
-  clientConfig: { region: awsConfig.region },
-  identityPoolId: awsConfig.identityPoolId,
-});
+// The Identity Pool login key format required by Cognito.
+const loginKey = `cognito-idp.${awsConfig.region}.amazonaws.com/${awsConfig.userPoolId}`;
 
-const s3 = new S3Client({
-  region: awsConfig.region,
-  credentials,
-});
+let cachedClient: S3Client | null = null;
+let cachedToken:  string | null   = null;
+
+/**
+ * Returns an S3Client built with the current user's Cognito credentials.
+ * Reuses the cached client as long as the ID token hasn't changed.
+ * Amplify auto-refreshes the JWT before it expires; when the token string
+ * changes, a new client is created with the updated login key.
+ */
+async function getS3Client(): Promise<S3Client> {
+  const session = await fetchAuthSession();
+  const idToken = session.tokens?.idToken?.toString();
+
+  if (!idToken) {
+    throw new Error(
+      'No authenticated session found. ' +
+      'The user must be signed in before making S3 requests.'
+    );
+  }
+
+  if (cachedClient && cachedToken === idToken) {
+    return cachedClient;
+  }
+
+  cachedToken  = idToken;
+  cachedClient = new S3Client({
+    region: awsConfig.region,
+    credentials: fromCognitoIdentityPool({
+      clientConfig: { region: awsConfig.region },
+      identityPoolId: awsConfig.identityPoolId,
+      logins: { [loginKey]: idToken },
+    }),
+  });
+
+  return cachedClient;
+}
 
 const { bucket, key } = awsConfig.s3;
 
@@ -49,9 +110,8 @@ const { bucket, key } = awsConfig.s3;
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Read the Response body stream from GetObjectCommand into a string. */
+/** Read the ReadableStream body returned by GetObjectCommand into a string. */
 async function bodyToString(body: unknown): Promise<string> {
-  // AWS SDK v3 returns a ReadableStream in browser environments.
   if (body instanceof ReadableStream) {
     const reader = body.getReader();
     const chunks: Uint8Array[] = [];
@@ -70,7 +130,6 @@ async function bodyToString(body: unknown): Promise<string> {
       }, new Uint8Array(0))
     );
   }
-  // Fallback for Node/test environments (Blob, Buffer, string).
   if (typeof body === 'string') return body;
   if (body instanceof Blob) return body.text();
   throw new Error('Unrecognised S3 response body type');
@@ -82,22 +141,19 @@ async function bodyToString(body: unknown): Promise<string> {
 
 /**
  * Fetch the shared list from S3.
- * Returns an empty array (with a synthetic ETag) when the object does not
- * yet exist so first-run works without any manual bucket setup.
+ * Returns an empty array when the object does not yet exist (first run).
  */
 export async function loadList(): Promise<LoadResult> {
+  const s3 = await getS3Client();
   try {
     const response = await s3.send(
       new GetObjectCommand({ Bucket: bucket, Key: key })
     );
-
-    const raw  = await bodyToString(response.Body);
-    const items: GroceryItem[] = JSON.parse(raw);
-    const etag = response.ETag ?? '';
-
+    const raw   = await bodyToString(response.Body);
+    const items = JSON.parse(raw) as GroceryItem[];
+    const etag  = response.ETag ?? '';
     return { items, etag };
   } catch (err: unknown) {
-    // Object doesn't exist yet — treat as an empty list.
     const code = (err as { name?: string })?.name;
     if (code === 'NoSuchKey' || code === 'NotFound') {
       return { items: [], etag: '' };
@@ -107,20 +163,21 @@ export async function loadList(): Promise<LoadResult> {
 }
 
 /**
- * Write the shared list back to S3.
+ * Write the shared list back to S3 with ETag-guarded optimistic locking.
  *
- * @param items  - Full list to persist.
- * @param etag   - ETag from the last successful load or save.
- *                 Pass '' to unconditionally overwrite (first write only).
+ * @param items - Full list to persist.
+ * @param etag  - ETag from the last successful load or save.
+ *                Pass '' to unconditionally overwrite on first write.
  *
  * Returns { etag, conflict: false } on success.
- * Returns { etag: '', conflict: true } when another user saved first (412).
+ * Returns { etag: '', conflict: true } on 412 (another user saved first).
  * Throws on any other error.
  */
 export async function saveList(
   items: GroceryItem[],
   etag: string
 ): Promise<SaveResult> {
+  const s3   = await getS3Client();
   const body = JSON.stringify(items);
 
   const params: ConstructorParameters<typeof PutObjectCommand>[0] = {
@@ -128,8 +185,6 @@ export async function saveList(
     Key:         key,
     Body:        body,
     ContentType: 'application/json',
-    // Only overwrite if the ETag still matches what we last read.
-    // Skip the condition on first write (etag is empty string).
     ...(etag ? { IfMatch: etag } : {}),
   };
 
@@ -139,10 +194,7 @@ export async function saveList(
   } catch (err: unknown) {
     const status = (err as { $metadata?: { httpStatusCode?: number } })
       ?.$metadata?.httpStatusCode;
-
     if (status === 412) {
-      // Precondition Failed — another user wrote to the object after our
-      // last read. Signal the conflict to the caller; do not throw.
       return { etag: '', conflict: true };
     }
     throw err;
@@ -150,12 +202,12 @@ export async function saveList(
 }
 
 /**
- * Cheap HEAD request to check whether the shared list has changed since
- * we last loaded it. Used by the polling interval in the component.
- *
+ * Cheap HEAD request to check whether the shared list has been updated
+ * by another user. Used by the polling interval in the component.
  * Returns the current ETag, or null if the object doesn't exist yet.
  */
 export async function getRemoteEtag(): Promise<string | null> {
+  const s3 = await getS3Client();
   try {
     const response = await s3.send(
       new HeadObjectCommand({ Bucket: bucket, Key: key })

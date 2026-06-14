@@ -11,6 +11,8 @@
 		"test": "vitest"
 	},
 	"dependencies": {
+		"aws-amplify":"^6.18.0",
+		"@aws-amplify/ui-react":"^6.15.4",
 		"@aws-sdk/client-s3":"^3.1065.0",
 		"@aws-sdk/credential-provider-cognito-identity":"^3.972.44",
 		"@fontsource/roboto": "^5.0.13",

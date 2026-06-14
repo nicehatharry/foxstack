@@ -1,5 +1,8 @@
+import '../config/amplify'   // must be first
 import React, { useState, useEffect, useRef, useCallback, ChangeEvent, FormEvent } from 'react';
 import styled, { createGlobalStyle, keyframes, css } from 'styled-components';
+import { withAuthenticator, type WithAuthenticatorProps } from '@aws-amplify/ui-react';
+import '@aws-amplify/ui-react/styles.css';
 import { loadList, saveList, getRemoteEtag, type SyncStatus } from '../services/s3Storage';
 import type { GroceryItem } from '../services/s3Storage';
 
@@ -92,6 +95,34 @@ const StatsRow = styled.div`
 
 const StatChip = styled.span<{ $highlight?: boolean }>`
   color: ${p => p.$highlight ? '#c8f59e' : '#a0a0a0'};
+`;
+
+const TopBarRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const SignOutBtn = styled.button`
+  background: none;
+  border: 1px solid #444;
+  color: #888;
+  font-family: 'Georgia', serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: border-color 0.15s, color 0.15s;
+
+  &:hover {
+    border-color: #888;
+    color: #ccc;
+  }
 `;
 
 // Sync status indicator — lives in the TopBar
@@ -713,7 +744,7 @@ const POLL_INTERVAL_MS = 30_000;
 // Prevents a PUT per keystroke during rapid edits.
 const SAVE_DEBOUNCE_MS = 600;
 
-const GroceryList: React.FC = () => {
+const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [formData, setFormData] = useState<FormData>({
     item: '', store: '', department: 'Produce', quantity: 1, acquired: false
@@ -927,7 +958,10 @@ const GroceryList: React.FC = () => {
       <AppShell>
         {/* Header */}
         <TopBar>
-          <AppTitle>Grocery List</AppTitle>
+          <TopBarRow>
+            <AppTitle>Grocery List</AppTitle>
+            <SignOutBtn onClick={signOut}>Sign out</SignOutBtn>
+          </TopBarRow>
           <StatsRow>
             <StatChip>{stats.total} items</StatChip>
             <StatChip $highlight>{stats.acquired} acquired</StatChip>
@@ -1119,4 +1153,4 @@ const GroceryList: React.FC = () => {
   );
 };
 
-export default GroceryList;
+export default withAuthenticator(GroceryList);
