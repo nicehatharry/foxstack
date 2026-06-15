@@ -27,7 +27,7 @@ interface FormData {
   item: string;
   store: string;
   department: string;
-  quantity: number;
+  quantity: string;
   acquired: boolean;
 }
 
@@ -747,7 +747,7 @@ const SAVE_DEBOUNCE_MS = 600;
 const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [formData, setFormData] = useState<FormData>({
-    item: '', store: '', department: 'Produce', quantity: 1, acquired: false
+    item: '', store: '', department: 'Produce', quantity: '1', acquired: false
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -866,7 +866,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   }, [persistItems]);
 
   const resetForm = () => {
-    setFormData({ item: '', store: '', department: 'Produce', quantity: 1, acquired: false });
+    setFormData({ item: '', store: '', department: 'Produce', quantity: '1', acquired: false });
     setEditingId(null);
   };
 
@@ -894,10 +894,10 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
 
     if (editingId) {
       updateItems(prev =>
-        prev.map(i => i.id === editingId ? { ...formData, id: editingId, quantity: Number(formData.quantity) } : i)
+        prev.map(i => i.id === editingId ? { ...formData, id: editingId, quantity: formData.quantity } : i)
       );
     } else {
-      const newItem: GroceryItem = { ...formData, acquired: false, id: Date.now().toString(), quantity: Number(formData.quantity) };
+      const newItem: GroceryItem = { ...formData, acquired: false, id: Date.now().toString(), quantity: formData.quantity };
       updateItems(prev => [...prev, newItem]);
     }
     handleClose();
@@ -1018,9 +1018,14 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
 
         {/* Item List */}
         <ListArea>
-          {processed.length === 0 && (
+          {(syncStatus == 'idle' && processed.length === 0) && (
             <EmptyState>
               Your list is empty.<br />Tap <strong>+</strong> to add your first item.
+            </EmptyState>
+          )}
+          {(syncStatus == 'loading' && processed.length === 0) && (
+            <EmptyState>
+              Loading...
             </EmptyState>
           )}
 
@@ -1046,7 +1051,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
                         {item.department}
                       </ItemMeta>
                     </ItemBody>
-                    <QtyBadge>×{item.quantity}</QtyBadge>
+                    <QtyBadge>{item.quantity}</QtyBadge>
                     <ActionRow>
                       <IconBtn $variant="edit" onClick={() => handleEdit(item)} aria-label="Edit">✎</IconBtn>
                       <IconBtn $variant="delete" onClick={() => handleDelete(item.id)} aria-label="Delete">✕</IconBtn>
@@ -1076,7 +1081,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
                       <ItemName $acquired={true} style={{ textDecoration: 'line-through', color: '#aaa' }}>{item.item}</ItemName>
                       <ItemMeta>{item.department}</ItemMeta>
                     </ItemBody>
-                    <QtyBadge>×{item.quantity}</QtyBadge>
+                    <QtyBadge>{item.quantity}</QtyBadge>
                     <ActionRow>
                       <IconBtn $variant="delete" onClick={() => handleDelete(item.id)} aria-label="Delete">✕</IconBtn>
                     </ActionRow>
@@ -1116,11 +1121,11 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
               <div>
                 <FieldLabel>Quantity</FieldLabel>
                 <FieldInput
-                  type="number"
+                  type="text"
                   name="quantity"
                   value={formData.quantity}
                   onChange={handleInputChange}
-                  min="1"
+                  placeholder="1"
                 />
               </div>
 

@@ -44,7 +44,7 @@ export interface GroceryItem {
   item: string;
   store: string;
   department: string;
-  quantity: number;
+  quantity: string;
   acquired: boolean;
 }
 
