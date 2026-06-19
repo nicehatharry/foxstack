@@ -61,7 +61,7 @@ export const SignOutBtn = styled.button`
 
 // Sync status indicator — lives in the TopBar
 export const SyncBar = styled.div<{ $status: SyncStatus }>`
-  display: ${p => p.$status === 'idle' ? 'none' : 'flex'};
+  display: flex;
   align-items: center;
   gap: 6px;
   margin-top: 8px;
@@ -71,7 +71,8 @@ export const SyncBar = styled.div<{ $status: SyncStatus }>`
   color: ${p => {
     if (p.$status === 'error' || p.$status === 'conflict') return '#ff8a80';
     if (p.$status === 'saving') return '#c8f59e';
-    return '#a0a0a0'; // loading
+    if (p.$status === 'loading') return '#a0a0a0';
+    return '#1a1a1a'; // idle (invisible)
   }};
   transition: color 0.2s ease;
 `;

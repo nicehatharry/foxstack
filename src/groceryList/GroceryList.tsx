@@ -76,6 +76,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
             {syncStatus === 'loading'  && 'Loading…'}
             {syncStatus === 'error'    && 'Save failed'}
             {syncStatus === 'conflict' && 'Refreshing…'}
+            {syncStatus === 'idle' && 'Ready'}
           </SyncBar>
         </TopBar>
 
