@@ -76,6 +76,8 @@ export const SyncBar = styled.div<{ $status: SyncStatus }>`
   transition: color 0.2s ease;
 `;
 
+const pulse = keyframes`0%,100%{opacity:1}50%{opacity:0.2}`;
+
 export const SyncDot = styled.span<{ $status: SyncStatus }>`
   width: 6px;
   height: 6px;
@@ -84,7 +86,7 @@ export const SyncDot = styled.span<{ $status: SyncStatus }>`
   flex-shrink: 0;
   animation: ${p =>
     (p.$status === 'saving' || p.$status === 'loading')
-      ? css`${keyframes`0%,100%{opacity:1}50%{opacity:0.2}`} 1s ease-in-out infinite`
+      ? css`${pulse} 1s ease-in-out infinite`
       : 'none'
   };
 `;

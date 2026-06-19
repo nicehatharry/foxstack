@@ -63,9 +63,6 @@ useGrocerySync ──items, updateItems──▶ GroceryList.tsx ──▶ Groce
   line-through` AND `ItemName`'s own animated `::after` strikethrough
   (see `GroceryListItem.tsx` and `styles/itemList.ts`) — doubled
   effect, present in the original markup.
-- `SyncDot` (in `styles/header.ts`) creates a brand-new `keyframes`
-  instance via an inline function on every render rather than a
-  top-level constant — also carried over as-is from the original.
 
 ## Paths outside this folder
 
