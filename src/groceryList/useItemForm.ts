@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import type { FormData, GroceryItem } from './GroceryList.types';
+import type { ItemData, GroceryItem } from './GroceryList.types';
 
-const EMPTY_FORM: FormData = { item: '', store: '', department: 'Produce', quantity: '1', acquired: false };
+const EMPTY_FORM: ItemData = { item: '', store: '', department: 'Produce', quantity: '1', acquired: false };
 
 /**
  * Controls the add/edit bottom sheet: open/closed state, which item (if
@@ -21,19 +21,19 @@ const EMPTY_FORM: FormData = { item: '', store: '', department: 'Produce', quant
 export function useItemForm(
   updateItems: (updater: (prev: GroceryItem[]) => GroceryItem[]) => void
 ) {
-  const [formData, setFormData] = useState<FormData>(EMPTY_FORM);
+  const [itemData, setItemData] = useState<ItemData>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const resetForm = () => {
-    setFormData(EMPTY_FORM);
+    setItemData(EMPTY_FORM);
     setEditingId(null);
   };
 
   const openAdd = () => { resetForm(); setSheetOpen(true); };
 
   const handleEdit = (item: GroceryItem) => {
-    setFormData({ item: item.item, store: item.store, department: item.department, quantity: item.quantity, acquired: item.acquired });
+    setItemData({ item: item.item, store: item.store, department: item.department, quantity: item.quantity, acquired: item.acquired });
     setEditingId(item.id);
     setSheetOpen(true);
   };
@@ -42,7 +42,7 @@ export function useItemForm(
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
+    setItemData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
@@ -50,14 +50,14 @@ export function useItemForm(
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!formData.item.trim()) return;
+    if (!itemData.item.trim()) return;
 
     if (editingId) {
       updateItems(prev =>
-        prev.map(i => i.id === editingId ? { ...formData, id: editingId, quantity: formData.quantity } : i)
+        prev.map(i => i.id === editingId ? { ...itemData, id: editingId, quantity: itemData.quantity } : i)
       );
     } else {
-      const newItem: GroceryItem = { ...formData, acquired: false, id: Date.now().toString(), quantity: formData.quantity };
+      const newItem: GroceryItem = { ...itemData, acquired: false, id: Date.now().toString(), quantity: itemData.quantity };
       updateItems(prev => [...prev, newItem]);
     }
     handleClose();
@@ -69,7 +69,7 @@ export function useItemForm(
   };
 
   return {
-    formData, editingId, sheetOpen,
+    formData: itemData, editingId, sheetOpen,
     openAdd, handleEdit, handleClose, handleInputChange, handleSubmit, handleDelete,
   };
 }

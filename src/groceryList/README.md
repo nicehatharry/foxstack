@@ -55,11 +55,6 @@ useGrocerySync ──items, updateItems──▶ GroceryList.tsx ──▶ Groce
                                               └──▶ useItemForm (uses updateItems too)
 ```
 
-## Pre-existing quirks (not bugs — don't "fix" unless asked)
-
-- `FormData` (in `GroceryList.types.ts`) shadows the DOM's built-in
-  `FormData` type within any file that imports it.
-
 ## Paths outside this folder
 
 Only three files reference anything outside `GroceryList/`

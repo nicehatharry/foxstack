@@ -11,12 +11,8 @@ export type { GroceryItem, SyncStatus };
 
 /**
  * Controlled state for the add/edit bottom sheet form.
- * Note: this name shadows the built-in DOM `FormData` type within this
- * module. That's pre-existing behavior from the original single-file
- * version, not a mistake — just be aware if you ever need the real DOM
- * FormData in a file that imports this one.
  */
-export interface FormData {
+export interface ItemData {
   item: string;
   store: string;
   department: string;
