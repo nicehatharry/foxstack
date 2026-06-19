@@ -76,7 +76,7 @@ export const ItemName = styled.div<{ $acquired: boolean }>`
       top: 50%;
       height: 1.5px;
       background: #aaa;
-      animation: ${strikeThrough} 0.25s ease forwards;
+      animation: ${strikeThrough} 0.4s ease forwards;
     }
   `}
 `;

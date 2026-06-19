@@ -59,20 +59,10 @@ useGrocerySync ──items, updateItems──▶ GroceryList.tsx ──▶ Groce
 
 - `FormData` (in `GroceryList.types.ts`) shadows the DOM's built-in
   `FormData` type within any file that imports it.
-- An acquired item's name gets both an inline `text-decoration:
-  line-through` AND `ItemName`'s own animated `::after` strikethrough
-  (see `GroceryListItem.tsx` and `styles/itemList.ts`) — doubled
-  effect, present in the original markup.
 
 ## Paths outside this folder
 
-Only three files reference anything outside `GroceryList/`, and all
-assume this folder sits exactly where the original `GroceryList.tsx`
-file used to (one level under `src/`, alongside sibling `services/` and
-`config/` folders):
-
+Only three files reference anything outside `GroceryList/`
 - `GroceryList.tsx` — `import '../config/amplify'`
 - `GroceryList.types.ts` — re-exports `GroceryItem`/`SyncStatus` from `../services/s3Storage`
 - `useGrocerySync.ts` — imports `loadList`/`saveList`/`getRemoteEtag` from `../services/s3Storage`
-
-If your project layout differs, those three are the only files to fix.

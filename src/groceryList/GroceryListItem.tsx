@@ -16,20 +16,13 @@ interface GroceryListItemProps {
 }
 
 /**
- * Single row in the grocery list. This was originally two near-duplicate
- * inline JSX blocks (one under "pending", one under "acquired") in the
- * main component; `item.acquired` now drives every difference between
- * them:
+ * Single row in the grocery list. `item.acquired` drives every difference between
+ * the two types of rows:
  *  - Pending: "Edit" + "Delete" icons, full meta line (store · department),
  *    checkbox aria-label "Mark acquired".
  *  - Acquired: only "Delete" icon, department-only meta (store is never
  *    shown once acquired, even if set), checkbox aria-label "Unmark", and
  *    an inline line-through style on the name.
- *
- * Note: when acquired, the name gets BOTH an inline `text-decoration:
- * line-through` AND ItemName's own animated ::after strikethrough (see
- * styles/itemList.ts). That layering is intentional/pre-existing, not a
- * bug to "fix" — both effects were present in the original markup.
  */
 export const GroceryListItem: React.FC<GroceryListItemProps> = ({
   item, index, onToggle, onEdit, onDelete,
@@ -51,7 +44,6 @@ export const GroceryListItem: React.FC<GroceryListItemProps> = ({
         <ItemBody>
           <ItemName
             $acquired={acquired}
-            style={acquired ? { textDecoration: 'line-through', color: '#aaa' } : undefined}
           >
             {item.item}
           </ItemName>
