@@ -82,7 +82,7 @@ interface SwipeableItemProps {
   children: React.ReactNode;
 }
 
-const SWIPE_THRESHOLD = 72; // px to commit action
+const SWIPE_THRESHOLD = 172; // px to commit action
 const INTENT_RATIO   = 1.4; // horizontal must be N× more than vertical to lock in
 
 /**
