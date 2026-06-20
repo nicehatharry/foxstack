@@ -48,7 +48,7 @@ export const GroceryListItem: React.FC<GroceryListItemProps> = ({
             {item.item}
           </ItemName>
           <ItemMeta>
-            {!acquired && item.store && <>{item.store} · </>}
+            {!acquired && item.store.length > 0 && <>{item.store.join(', ')} · </>}
             {item.department}
           </ItemMeta>
         </ItemBody>

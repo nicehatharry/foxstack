@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import type { ItemData, GroceryItem } from './GroceryList.types';
 
-const EMPTY_FORM: ItemData = { item: '', store: '', department: 'Produce', quantity: '1', acquired: false };
+const EMPTY_FORM: ItemData = { item: '', store: [], department: 'Produce', quantity: '1', acquired: false };
 
 /**
  * Controls the add/edit bottom sheet: open/closed state, which item (if
@@ -48,6 +48,16 @@ export function useItemForm(
     }));
   };
 
+  /** Toggle a single store chip on/off in the multi-select. */
+  const handleStoreToggle = (store: string) => {
+    setItemData(prev => ({
+      ...prev,
+      store: prev.store.includes(store)
+        ? prev.store.filter(s => s !== store)
+        : [...prev.store, store],
+    }));
+  };
+
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!itemData.item.trim()) return;
@@ -70,6 +80,6 @@ export function useItemForm(
 
   return {
     formData: itemData, editingId, sheetOpen,
-    openAdd, handleEdit, handleClose, handleInputChange, handleSubmit, handleDelete,
+    openAdd, handleEdit, handleClose, handleInputChange, handleStoreToggle, handleSubmit, handleDelete,
   };
 }

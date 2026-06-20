@@ -39,10 +39,28 @@ import { awsConfig } from '../config/aws';
 // Types
 // ---------------------------------------------------------------------------
 
+/**
+ * Fixed set of stores a shopper can tag an item with. A single item can
+ * belong to more than one store (e.g. milk you'd buy at either Aldi or
+ * Whole Foods), so `GroceryItem.store` is an array drawn from this list.
+ */
+export const STORE_OPTIONS = [
+  'Aldi',
+  "Trader Joe's",
+  'Target',
+  'Whole Foods',
+  'Regular Grocery',
+  'Hardware Store',
+  'Other',
+] as const;
+
+export type StoreOption = typeof STORE_OPTIONS[number];
+
 export interface GroceryItem {
   id: string;
   item: string;
-  store: string;
+  /** Zero or more stores this item can be bought at. Empty array = no preference. */
+  store: string[];
   department: string;
   quantity: string;
   acquired: boolean;

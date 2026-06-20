@@ -102,6 +102,30 @@ export const FieldSelect = styled.select`
   }
 `;
 
+export const StoreChipGrid = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+export const StoreChip = styled.button<{ $selected: boolean }>`
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1.5px solid ${p => p.$selected ? '#1a1a1a' : '#e8e8e8'};
+  background: ${p => p.$selected ? '#1a1a1a' : '#fafafa'};
+  color: ${p => p.$selected ? '#c8f59e' : '#555'};
+  font-size: 13px;
+  font-family: 'Georgia', serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 36px;
+
+  &:active {
+    transform: scale(0.97);
+  }
+`;
+
 export const SubmitBtn = styled.button`
   width: 100%;
   padding: 15px;

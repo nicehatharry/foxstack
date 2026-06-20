@@ -14,7 +14,8 @@ export type { GroceryItem, SyncStatus };
  */
 export interface ItemData {
   item: string;
-  store: string;
+  /** Selected store names, drawn from storeOptions. Empty = no preference. */
+  store: string[];
   department: string;
   quantity: string;
   acquired: boolean;

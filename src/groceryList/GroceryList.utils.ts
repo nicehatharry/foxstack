@@ -23,12 +23,24 @@ export function filterAndSortItems(
     })
     .sort((a, b) => {
       if (!sortConfig.key) return 0;
-      let av: string | number | boolean = a[sortConfig.key];
-      let bv: string | number | boolean = b[sortConfig.key];
+      let av: string | number | boolean = toComparable(a[sortConfig.key]);
+      let bv: string | number | boolean = toComparable(b[sortConfig.key]);
       if (typeof av === 'string') av = av.toLowerCase();
       if (typeof bv === 'string') bv = bv.toLowerCase();
       if (av < bv) return sortConfig.direction === 'asc' ? -1 : 1;
       if (av > bv) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
+}
+
+/**
+ * `store` is an array (multi-select), but every other sortable column is a
+ * plain string/number/boolean. Arrays compare unreliably with `<`/`>`
+ * (they coerce to a joined string but that's easy to get wrong silently),
+ * so make it explicit: join to a sortable string here rather than relying
+ * on implicit coercion.
+ */
+function toComparable(value: unknown): string | number | boolean {
+  if (Array.isArray(value)) return value.join(', ');
+  return value as string | number | boolean;
 }

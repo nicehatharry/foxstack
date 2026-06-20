@@ -5,7 +5,7 @@ import { withAuthenticator, type WithAuthenticatorProps } from '@aws-amplify/ui-
 import '@aws-amplify/ui-react/styles.css';
 
 import { GlobalStyle } from './GlobalStyle';
-import { departments, sortKeys } from './GroceryList.constants';
+import { departments, storeOptions, sortKeys } from './GroceryList.constants';
 import { filterAndSortItems } from './GroceryList.utils';
 import type { SortConfig, GroceryItem } from './GroceryList.types';
 import { useGrocerySync } from './useGrocerySync';
@@ -17,7 +17,7 @@ import { TopBar, TopBarRow, AppTitle, SignOutBtn, StatsRow, StatChip, SyncBar, S
 import { AlertBanner, AlertAction } from './styles/alert';
 import { FilterBar, FilterPill, SortBar, SortBtn } from './styles/filters';
 import { ListArea, SectionLabel, EmptyState } from './styles/itemList';
-import { Overlay, Sheet, SheetHandle, SheetTitle, FieldGrid, FieldFull, FieldLabel, FieldInput, FieldSelect, SubmitBtn } from './styles/sheet';
+import { Overlay, Sheet, SheetHandle, SheetTitle, FieldGrid, FieldFull, FieldLabel, FieldInput, FieldSelect, StoreChipGrid, StoreChip, SubmitBtn } from './styles/sheet';
 import { FAB } from './styles/fab';
 
 const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
@@ -27,7 +27,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   // Add/edit bottom sheet — see useItemForm.ts
   const {
     formData, editingId, sheetOpen,
-    openAdd, handleEdit, handleClose, handleInputChange, handleSubmit, handleDelete,
+    openAdd, handleEdit, handleClose, handleInputChange, handleStoreToggle, handleSubmit, handleDelete,
   } = useItemForm(updateItems);
 
   // View-only UI state (filtering/sorting the list, not the data itself)
@@ -212,13 +212,19 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
 
               <FieldFull>
                 <FieldLabel>Store (optional)</FieldLabel>
-                <FieldInput
-                  type="text"
-                  name="store"
-                  value={formData.store}
-                  onChange={handleInputChange}
-                  placeholder="e.g. Trader Joe's"
-                />
+                <StoreChipGrid role="group" aria-label="Select stores">
+                  {storeOptions.map(store => (
+                    <StoreChip
+                      key={store}
+                      type="button"
+                      $selected={formData.store.includes(store)}
+                      onClick={() => handleStoreToggle(store)}
+                      aria-pressed={formData.store.includes(store)}
+                    >
+                      {store}
+                    </StoreChip>
+                  ))}
+                </StoreChipGrid>
               </FieldFull>
             </FieldGrid>
 
