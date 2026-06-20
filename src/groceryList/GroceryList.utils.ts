@@ -1,4 +1,4 @@
-import type { GroceryItem, SortConfig } from './GroceryList.types';
+import type { GroceryItem } from './GroceryList.types';
 
 /**
  * Applies the department + status filters and the active column sort
@@ -12,7 +12,7 @@ export function filterAndSortItems(
   items: GroceryItem[],
   filterDept: string,
   filterStatus: 'All' | 'Acquired' | 'Pending',
-  sortConfig: SortConfig
+  isDeptSort: boolean
 ): GroceryItem[] {
   return items
     .filter(item => {
@@ -22,25 +22,16 @@ export function filterAndSortItems(
       return true;
     })
     .sort((a, b) => {
-      if (!sortConfig.key) return 0;
-      let av: string | number | boolean = toComparable(a[sortConfig.key]);
-      let bv: string | number | boolean = toComparable(b[sortConfig.key]);
-      if (typeof av === 'string') av = av.toLowerCase();
-      if (typeof bv === 'string') bv = bv.toLowerCase();
-      if (av < bv) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (av > bv) return sortConfig.direction === 'asc' ? 1 : -1;
+      let aDept: string = a[('department')].toLowerCase();
+      let aItem: string = a[('item')].toLowerCase();
+      let bDept: string = b[('department')].toLowerCase();
+      let bItem: string = b[('item')].toLowerCase();
+      if (isDeptSort) {
+        if (aDept < bDept) return -1;
+        if (aDept > bDept) return 1;
+      }
+      if (aItem < bItem) return -1;
+      if (aItem > bItem) return 1;
       return 0;
     });
-}
-
-/**
- * `store` is an array (multi-select), but every other sortable column is a
- * plain string/number/boolean. Arrays compare unreliably with `<`/`>`
- * (they coerce to a joined string but that's easy to get wrong silently),
- * so make it explicit: join to a sortable string here rather than relying
- * on implicit coercion.
- */
-function toComparable(value: unknown): string | number | boolean {
-  if (Array.isArray(value)) return value.join(', ');
-  return value as string | number | boolean;
 }

@@ -20,9 +20,3 @@ export interface ItemData {
   quantity: string;
   acquired: boolean;
 }
-
-/** Current column + direction for the item list sort. `key: null` means unsorted. */
-export interface SortConfig {
-  key: keyof GroceryItem | null;
-  direction: 'asc' | 'desc';
-}

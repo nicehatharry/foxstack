@@ -7,7 +7,6 @@ import '@aws-amplify/ui-react/styles.css';
 import { GlobalStyle } from './GlobalStyle';
 import { departments, storeOptions, sortKeys } from './GroceryList.constants';
 import { filterAndSortItems } from './GroceryList.utils';
-import type { SortConfig, GroceryItem } from './GroceryList.types';
 import { useGrocerySync } from './useGrocerySync';
 import { useItemForm } from './useItemForm';
 import { GroceryListItem } from './GroceryListItem';
@@ -31,7 +30,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   } = useItemForm(updateItems);
 
   // View-only UI state (filtering/sorting the list, not the data itself)
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
+  const [isDeptSort, setDeptSort] = useState<boolean>(false);
   const [filterDept, setFilterDept] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<'All' | 'Acquired' | 'Pending'>('All');
 
@@ -39,17 +38,13 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
     updateItems(prev => prev.map(i => i.id === id ? { ...i, acquired: !i.acquired } : i));
   };
 
-  const handleSort = (key: keyof GroceryItem) => {
-    setSortConfig(prev => {
-      if (prev.key === key) {
-        if (prev.direction === 'desc') return { key: null, direction: 'asc' };
-        return { key, direction: 'desc' };
-      }
-      return { key, direction: 'asc' };
+  const handleSort = () => {
+    setDeptSort(prev => {
+      return !prev;
     });
   };
 
-  const processed = filterAndSortItems(items, filterDept, filterStatus, sortConfig);
+  const processed = filterAndSortItems(items, filterDept, filterStatus, isDeptSort);
   const pending = processed.filter(i => !i.acquired);
   const acquired = processed.filter(i => i.acquired);
 
@@ -112,10 +107,10 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
           {sortKeys.map(({ key, label }) => (
             <SortBtn
               key={key}
-              $active={sortConfig.key === key}
-              onClick={() => handleSort(key)}
+              $active={isDeptSort}
+              onClick={() => handleSort()}
             >
-              {label} {sortConfig.key === key ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              {label}
             </SortBtn>
           ))}
         </SortBar>

@@ -59,7 +59,6 @@ export type StoreOption = typeof STORE_OPTIONS[number];
 export interface GroceryItem {
   id: string;
   item: string;
-  /** Zero or more stores this item can be bought at. Empty array = no preference. */
   store: string[];
   department: string;
   quantity: string;

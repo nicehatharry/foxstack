@@ -41,8 +41,5 @@ export const SAVE_DEBOUNCE_MS = 600;
 
 /** Columns available in the status+sort bar, in display order. */
 export const sortKeys: { key: keyof GroceryItem; label: string }[] = [
-  { key: 'item', label: 'Name' },
   { key: 'department', label: 'Dept' },
-  { key: 'store', label: 'Store' },
-  { key: 'quantity', label: 'Qty' },
 ];
