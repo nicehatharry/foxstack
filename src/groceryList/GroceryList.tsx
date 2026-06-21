@@ -21,7 +21,7 @@ import { FAB } from './styles/fab';
 import type { GroceryItem } from './GroceryList.types';
 
 /**
- * Renders one section's (pending/acquired) rows, inserting a DeptHeader
+ * Renders one section's rows, inserting a DeptHeader
  * before the first item of each new department whenever isDeptSort is on.
  * Items are expected to already be department-sorted by filterAndSortItems
  * — this just detects the boundaries, it doesn't re-sort anything.
@@ -67,9 +67,9 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   } = useItemForm(updateItems);
 
   // View-only UI state (filtering/sorting the list, not the data itself)
-  const [isDeptSort, setDeptSort] = useState<boolean>(false);
+  const [isDeptSort, setDeptSort] = useState<boolean>(true);
   const [filterStore, setFilterStore] = useState<string>('All');
-  const [filterStatus, setFilterStatus] = useState<'All' | 'Acquired' | 'Pending'>('All');
+  const [doShowAll, setShowAll] = useState<boolean>(false);
 
   const toggleAcquired = (id: string) => {
     updateItems(prev => prev.map(i => i.id === id ? { ...i, acquired: !i.acquired } : i));
@@ -81,7 +81,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
     });
   };
 
-  const processed = filterAndSortItems(items, filterStore, filterStatus, isDeptSort);
+  const processed = filterAndSortItems(items, filterStore, isDeptSort);
   const pending = processed.filter(i => !i.acquired);
   const acquired = processed.filter(i => i.acquired);
 
@@ -130,19 +130,9 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
 
         {/* Status + Sort */}
         <SortBar>
-          {(['All', 'Pending', 'Acquired'] as const).map(s => (
-            <SortBtn key={s} $active={filterStatus === s} onClick={() => setFilterStatus(s)}>{s}</SortBtn>
-          ))}
+          <SortBtn key={'department-sort'} $active={isDeptSort} onClick={() => handleSort()}>{'Dept Sort'}</SortBtn>
           <span style={{ color: '#ccc', alignSelf: 'center', fontSize: 12, margin: '0 4px' }}>·</span>
-          {sortKeys.map(({ key, label }) => (
-            <SortBtn
-              key={key}
-              $active={isDeptSort}
-              onClick={() => handleSort()}
-            >
-              {label}
-            </SortBtn>
-          ))}
+          <SortBtn key={'show-all'} $active={doShowAll} onClick={() => setShowAll(prev => !prev)}>{'Show All'}</SortBtn>
         </SortBar>
 
         {/* Item List */}
@@ -168,7 +158,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
             </>
           )}
 
-          {acquired.length > 0 && (
+          {doShowAll && acquired.length > 0 && (
             <>
               <SectionLabel>In Cart</SectionLabel>
               {acquired.map((item, i) => (

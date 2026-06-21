@@ -3,7 +3,7 @@ import { fadeIn, strikeThrough } from '../animations';
 
 export const ListArea = styled.main`
   flex: 1;
-  padding: 16px;
+  padding: 0 16px;
   padding-bottom: 120px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;

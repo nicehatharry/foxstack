@@ -11,14 +11,11 @@ import type { GroceryItem } from './GroceryList.types';
 export function filterAndSortItems(
   items: GroceryItem[],
   filterStore: string,
-  filterStatus: 'All' | 'Acquired' | 'Pending',
   isDeptSort: boolean
 ): GroceryItem[] {
   return items
     .filter(item => {
       if (filterStore !== 'All' && !item.store.includes(filterStore)) return false;
-      if (filterStatus === 'Acquired' && !item.acquired) return false;
-      if (filterStatus === 'Pending' && item.acquired) return false;
       return true;
     })
     .sort((a, b) => {
