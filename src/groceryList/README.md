@@ -19,26 +19,35 @@ A single-page grocery list app (Amplify auth + S3-backed storage)
 ## File map
 
 ```
-GroceryList/
-├── index.ts                 barrel re-export, keeps external imports unchanged
-├── GroceryList.tsx           main component: hook orchestration + JSX layout only
-├── GroceryList.types.ts      canonical types (GroceryItem, SyncStatus, FormData, SortConfig)
-├── GroceryList.constants.ts  departments, poll/debounce timing, sort columns
-├── GroceryList.utils.ts      pure filterAndSortItems()
-├── useGrocerySync.ts         S3 load/save/poll/conflict — owns `items` state
-├── useItemForm.ts            add/edit bottom sheet state + handlers
-├── SwipeableItem.tsx         swipe gesture wrapper, own styles co-located
-├── GroceryListItem.tsx       one list row (pending vs. acquired variants)
-├── GlobalStyle.ts            body/box-sizing reset
-├── animations.ts             shared keyframes (slideUp, fadeIn, strikeThrough)
-└── styles/
-    ├── layout.ts              AppShell
-    ├── header.ts              TopBar, title, stats, sync indicator
-    ├── alert.ts               conflict/error banner
-    ├── filters.ts             department pills + status/sort bar
-    ├── itemList.ts            list container + item card pieces + empty state
-    ├── sheet.ts               bottom sheet + form fields
-    └── fab.ts                 floating "+" button
+src/
+├── assets/
+    ├── trash-icon.svg            icon for removing checked-off items button
+    └── sign-out.svg              icon for sign out button
+├── config/
+    ├── amplify.ts                configures the Amplify library with the Cognito User Pool and Identity Pool
+    └── aws.ts                    all other AWS configuration
+├── groceryList/
+    ├── index.ts                  barrel re-export, keeps external imports unchanged
+    ├── GroceryList.tsx           main component: hook orchestration + JSX layout; selector to render department headers lives here
+    ├── GroceryList.types.ts      canonical types (GroceryItem, SyncStatus, ItemData)
+    ├── GroceryList.constants.ts  departments, store options, poll/debounce timing
+    ├── GroceryList.utils.ts      pure filterAndSortItems()
+    ├── useGrocerySync.ts         S3 load/save/poll/conflict — owns `items` state
+    ├── useItemForm.ts            add/edit bottom sheet state + handlers
+    ├── SwipeableItem.tsx         swipe gesture wrapper, own styles co-located
+    ├── GroceryListItem.tsx       one list row (pending vs. acquired variants)
+    ├── GlobalStyle.ts            body/box-sizing reset
+    ├── animations.ts             shared keyframes (slideUp, fadeIn, strikeThrough)
+    └── styles/
+        ├── layout.ts              AppShell
+        ├── header.ts              TopBar, title, stats, sync indicator
+        ├── alert.ts               conflict/error banner
+        ├── filters.ts             department pills + status/sort bar
+        ├── itemList.ts            list container + item card pieces + empty state
+        ├── sheet.ts               bottom sheet + form fields
+        └── fab.ts                 floating "+" button
+└── services/
+    └── s3storage.ts               S3 I/O lives here; the component never touches the AWS SDK directly
 ```
 
 ## Data flow
@@ -54,10 +63,3 @@ useGrocerySync ──items, updateItems──▶ GroceryList.tsx ──▶ Groce
                                               │
                                               └──▶ useItemForm (uses updateItems too)
 ```
-
-## Paths outside this folder
-
-Only three files reference anything outside `GroceryList/`
-- `GroceryList.tsx` — `import '../config/amplify'`
-- `GroceryList.types.ts` — re-exports `GroceryItem`/`SyncStatus` from `../services/s3Storage`
-- `useGrocerySync.ts` — imports `loadList`/`saveList`/`getRemoteEtag` from `../services/s3Storage`

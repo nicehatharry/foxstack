@@ -1,4 +1,3 @@
-import type { GroceryItem } from './GroceryList.types';
 import { STORE_OPTIONS } from '../services/s3Storage';
 
 /**
@@ -38,8 +37,3 @@ export const POLL_INTERVAL_MS = 30_000;
  * Prevents a PUT per keystroke during rapid edits.
  */
 export const SAVE_DEBOUNCE_MS = 600;
-
-/** Columns available in the status+sort bar, in display order. */
-export const sortKeys: { key: keyof GroceryItem; label: string }[] = [
-  { key: 'department', label: 'Dept Sort' },
-];
