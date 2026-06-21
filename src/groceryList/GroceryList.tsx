@@ -15,9 +15,46 @@ import { AppShell } from './styles/layout';
 import { TopBar, TopBarRow, AppTitle, SignOutBtn, SyncBar, SyncDot } from './styles/header';
 import { AlertBanner, AlertAction } from './styles/alert';
 import { FilterBar, FilterPill, SortBar, SortBtn } from './styles/filters';
-import { ListArea, SectionLabel, EmptyState } from './styles/itemList';
+import { ListArea, SectionLabel, DeptHeader, EmptyState } from './styles/itemList';
 import { Overlay, Sheet, SheetHandle, SheetTitle, FieldGrid, FieldFull, FieldLabel, FieldInput, FieldSelect, StoreChipGrid, StoreChip, SubmitBtn } from './styles/sheet';
 import { FAB } from './styles/fab';
+import type { GroceryItem } from './GroceryList.types';
+
+/**
+ * Renders one section's (pending/acquired) rows, inserting a DeptHeader
+ * before the first item of each new department whenever isDeptSort is on.
+ * Items are expected to already be department-sorted by filterAndSortItems
+ * — this just detects the boundaries, it doesn't re-sort anything.
+ */
+function renderSectionItems(
+  sectionItems: GroceryItem[],
+  isDeptSort: boolean,
+  handlers: {
+    onToggle: (id: string) => void;
+    onEdit: (item: GroceryItem) => void;
+    onDelete: (id: string) => void;
+  }
+) {
+  let lastDept: string | null = null;
+
+  return sectionItems.map((item, i) => {
+    const showDeptHeader = isDeptSort && item.department !== lastDept;
+    lastDept = item.department;
+
+    return (
+      <React.Fragment key={item.id}>
+        {showDeptHeader && <DeptHeader>{item.department}</DeptHeader>}
+        <GroceryListItem
+          item={item}
+          index={i}
+          onToggle={handlers.onToggle}
+          onEdit={handlers.onEdit}
+          onDelete={handlers.onDelete}
+        />
+      </React.Fragment>
+    );
+  });
+}
 
 const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   // S3-synced item list — see useGrocerySync.ts for load/save/poll/conflict logic
@@ -123,17 +160,11 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
 
           {pending.length > 0 && (
             <>
-              {filterStatus === 'All' && <SectionLabel>To Get</SectionLabel>}
-              {pending.map((item, i) => (
-                <GroceryListItem
-                  key={item.id}
-                  item={item}
-                  index={i}
-                  onToggle={toggleAcquired}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              ))}
+              {renderSectionItems(pending, isDeptSort, {
+                onToggle: toggleAcquired,
+                onEdit: handleEdit,
+                onDelete: handleDelete,
+              })}
             </>
           )}
 
@@ -174,7 +205,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
                   name="item"
                   value={formData.item}
                   onChange={handleInputChange}
-                  placeholder="e.g. Whole milk"
+                  placeholder="Whole milk"
                   required
                   autoFocus={sheetOpen}
                 />
@@ -199,7 +230,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
               </div>
 
               <FieldFull>
-                <FieldLabel>Store (optional)</FieldLabel>
+                <FieldLabel>Store</FieldLabel>
                 <StoreChipGrid role="group" aria-label="Select stores">
                   {storeOptions.map(store => (
                     <StoreChip

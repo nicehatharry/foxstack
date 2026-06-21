@@ -10,11 +10,24 @@ export const ListArea = styled.main`
 `;
 
 export const SectionLabel = styled.div`
+  background: #c4ef9d;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #222;
+  margin: 16px 0 8px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-family: 'Georgia', serif;
+`;
+
+export const DeptHeader = styled.div`
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #888;
-  margin: 16px 0 8px;
+  color: #aaa;
+  margin: 12px 0 6px;
   font-family: 'Georgia', serif;
 `;
 
