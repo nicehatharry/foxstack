@@ -5,7 +5,7 @@ import { withAuthenticator, type WithAuthenticatorProps } from '@aws-amplify/ui-
 import '@aws-amplify/ui-react/styles.css';
 
 import { GlobalStyle } from './GlobalStyle';
-import { departments, storeOptions, sortKeys } from './GroceryList.constants';
+import { departments, storeOptions } from './GroceryList.constants';
 import { filterAndSortItems } from './GroceryList.utils';
 import { useGrocerySync } from './useGrocerySync';
 import { useItemForm } from './useItemForm';
