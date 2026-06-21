@@ -5,7 +5,7 @@ import styled from 'styled-components';
 export const FilterBar = styled.div`
   display: flex;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 0px 16px 12px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;

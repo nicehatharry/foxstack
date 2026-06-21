@@ -4,7 +4,7 @@ import type { SyncStatus } from '../GroceryList.types';
 export const TopBar = styled.header`
   background: #1a1a1a;
   color: #f0ede8;
-  padding: 18px 20px 14px;
+  padding: 18px 20px 4px;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -51,7 +51,6 @@ export const SyncBar = styled.div<{ $status: SyncStatus }>`
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 8px;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
