@@ -48,8 +48,6 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   const pending = processed.filter(i => !i.acquired);
   const acquired = processed.filter(i => i.acquired);
 
-  const stats = { total: items.length, acquired: items.filter(i => i.acquired).length };
-
   return (
     <>
       <GlobalStyle />
@@ -125,7 +123,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
 
           {pending.length > 0 && (
             <>
-              {filterStatus === 'All' && <SectionLabel>To Get — {pending.length}</SectionLabel>}
+              {filterStatus === 'All' && <SectionLabel>To Get</SectionLabel>}
               {pending.map((item, i) => (
                 <GroceryListItem
                   key={item.id}
@@ -141,7 +139,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
 
           {acquired.length > 0 && (
             <>
-              <SectionLabel>In Cart — {acquired.length}</SectionLabel>
+              <SectionLabel>In Cart</SectionLabel>
               {acquired.map((item, i) => (
                 <GroceryListItem
                   key={item.id}
