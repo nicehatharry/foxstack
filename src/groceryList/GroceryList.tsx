@@ -68,7 +68,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
 
   // View-only UI state (filtering/sorting the list, not the data itself)
   const [isDeptSort, setDeptSort] = useState<boolean>(false);
-  const [filterDept, setFilterDept] = useState<string>('All');
+  const [filterStore, setFilterStore] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<'All' | 'Acquired' | 'Pending'>('All');
 
   const toggleAcquired = (id: string) => {
@@ -81,7 +81,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
     });
   };
 
-  const processed = filterAndSortItems(items, filterDept, filterStatus, isDeptSort);
+  const processed = filterAndSortItems(items, filterStore, filterStatus, isDeptSort);
   const pending = processed.filter(i => !i.acquired);
   const acquired = processed.filter(i => i.acquired);
 
@@ -105,11 +105,11 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
           </SyncBar>
         </TopBar>
 
-        {/* Department filters */}
+        {/* Store filters */}
         <FilterBar>
-          {['All', ...departments].map(dept => (
-            <FilterPill key={dept} $active={filterDept === dept} onClick={() => setFilterDept(dept)}>
-              {dept}
+          {['All', ...storeOptions].map(store => (
+            <FilterPill key={store} $active={filterStore === store} onClick={() => setFilterStore(store)}>
+              {store}
             </FilterPill>
           ))}
         </FilterBar>

@@ -1,7 +1,7 @@
 import type { GroceryItem } from './GroceryList.types';
 
 /**
- * Applies the department + status filters and the active column sort
+ * Applies the store + status filters and the active column sort
  * to the raw item list. Pure function — no state, no side effects.
  *
  * If you're asked to change sort/filter behavior (e.g. "sort should be
@@ -10,13 +10,13 @@ import type { GroceryItem } from './GroceryList.types';
  */
 export function filterAndSortItems(
   items: GroceryItem[],
-  filterDept: string,
+  filterStore: string,
   filterStatus: 'All' | 'Acquired' | 'Pending',
   isDeptSort: boolean
 ): GroceryItem[] {
   return items
     .filter(item => {
-      if (filterDept !== 'All' && item.department !== filterDept) return false;
+      if (filterStore !== 'All' && !item.store.includes(filterStore)) return false;
       if (filterStatus === 'Acquired' && !item.acquired) return false;
       if (filterStatus === 'Pending' && item.acquired) return false;
       return true;
