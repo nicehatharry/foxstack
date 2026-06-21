@@ -12,7 +12,7 @@ import { useItemForm } from './useItemForm';
 import { GroceryListItem } from './GroceryListItem';
 
 import { AppShell } from './styles/layout';
-import { TopBar, TopBarRow, AppTitle, SignOutBtn, StatsRow, StatChip, SyncBar, SyncDot } from './styles/header';
+import { TopBar, TopBarRow, AppTitle, SignOutBtn, SyncBar, SyncDot } from './styles/header';
 import { AlertBanner, AlertAction } from './styles/alert';
 import { FilterBar, FilterPill, SortBar, SortBtn } from './styles/filters';
 import { ListArea, SectionLabel, EmptyState } from './styles/itemList';
@@ -60,11 +60,6 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
             <AppTitle>Grocery List</AppTitle>
             <SignOutBtn onClick={signOut}>Sign out</SignOutBtn>
           </TopBarRow>
-          <StatsRow>
-            <StatChip>{stats.total} items</StatChip>
-            <StatChip $highlight>{stats.acquired} acquired</StatChip>
-            <StatChip>{stats.total - stats.acquired} remaining</StatChip>
-          </StatsRow>
           <SyncBar $status={syncStatus}>
             <SyncDot $status={syncStatus} />
             {syncStatus === 'saving'   && 'Saving…'}

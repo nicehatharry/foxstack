@@ -18,19 +18,6 @@ export const AppTitle = styled.h1`
   font-style: italic;
 `;
 
-export const StatsRow = styled.div`
-  display: flex;
-  gap: 16px;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #a0a0a0;
-`;
-
-export const StatChip = styled.span<{ $highlight?: boolean }>`
-  color: ${p => p.$highlight ? '#c8f59e' : '#a0a0a0'};
-`;
-
 export const TopBarRow = styled.div`
   display: flex;
   align-items: flex-start;
