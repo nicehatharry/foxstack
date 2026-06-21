@@ -11,8 +11,10 @@ import { useGrocerySync } from './useGrocerySync';
 import { useItemForm } from './useItemForm';
 import { GroceryListItem } from './GroceryListItem';
 
+import signOutIconSrc from '../assets/sign-out.svg';
+
 import { AppShell } from './styles/layout';
-import { TopBar, TopBarRow, AppTitle, SignOutBtn, SyncBar, SyncDot } from './styles/header';
+import { TopBar, TopBarRow, AppTitle, SignOutBtn, SignOutIcon, SyncBar, SyncDot } from './styles/header';
 import { AlertBanner, AlertAction } from './styles/alert';
 import { FilterBar, FilterPill, SortBar, SortBtn } from './styles/filters';
 import { ListArea, SectionLabel, DeptHeader, EmptyState } from './styles/itemList';
@@ -93,7 +95,9 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
         <TopBar>
           <TopBarRow>
             <AppTitle>Grocery List</AppTitle>
-            <SignOutBtn onClick={signOut}>Sign out</SignOutBtn>
+            <SignOutBtn onClick={signOut} aria-label="Sign out" title="Sign out">
+              <SignOutIcon $src={signOutIconSrc} aria-hidden="true" />
+            </SignOutBtn>
           </TopBarRow>
           <SyncBar $status={syncStatus}>
             <SyncDot $status={syncStatus} />

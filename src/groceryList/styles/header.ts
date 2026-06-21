@@ -26,14 +26,15 @@ export const TopBarRow = styled.div`
 `;
 
 export const SignOutBtn = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   background: none;
   border: 1px solid #444;
   color: #888;
-  font-family: 'Georgia', serif;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 5px 10px;
+  padding: 0;
   border-radius: 6px;
   cursor: pointer;
   flex-shrink: 0;
@@ -44,6 +45,22 @@ export const SignOutBtn = styled.button`
     border-color: #888;
     color: #ccc;
   }
+
+  &:focus-visible {
+    outline: 2px solid #888;
+    outline-offset: 2px;
+  }
+`;
+
+// Icon rendered via mask so it inherits SignOutBtn's `color` (theme-aware,
+// including hover/focus) instead of being locked to the SVG's own fill.
+export const SignOutIcon = styled.span<{ $src: string }>`
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  flex-shrink: 0;
+  -webkit-mask: url(${p => p.$src}) center / contain no-repeat;
+  mask: url(${p => p.$src}) center / contain no-repeat;
 `;
 
 // Sync status indicator — lives in the TopBar
