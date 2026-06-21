@@ -81,16 +81,6 @@ export const ItemName = styled.div<{ $acquired: boolean }>`
   `}
 `;
 
-export const ItemMeta = styled.div`
-  font-size: 11px;
-  color: #999;
-  margin-top: 3px;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
 export const QtyBadge = styled.span`
   background: #f0ede8;
   border-radius: 6px;
@@ -99,31 +89,6 @@ export const QtyBadge = styled.span`
   color: #555;
   flex-shrink: 0;
   font-family: 'Georgia', serif;
-`;
-
-export const ActionRow = styled.div`
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-`;
-
-export const IconBtn = styled.button<{ $variant: 'edit' | 'delete' }>`
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  background: ${p => p.$variant === 'delete' ? '#fff0f0' : '#f0f0ff'};
-  color: ${p => p.$variant === 'delete' ? '#e05555' : '#5555cc'};
-  transition: background 0.15s;
-
-  &:active {
-    background: ${p => p.$variant === 'delete' ? '#ffd9d9' : '#dcdcff'};
-  }
 `;
 
 export const EmptyState = styled.div`

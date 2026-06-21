@@ -2,7 +2,7 @@ import React from 'react';
 import type { GroceryItem } from './GroceryList.types';
 import { SwipeableItem } from './SwipeableItem';
 import {
-  ItemCard, CheckCircle, ItemBody, ItemName, ItemMeta, QtyBadge, ActionRow, IconBtn,
+  ItemCard, CheckCircle, ItemBody, ItemName, QtyBadge,
 } from './styles/itemList';
 
 interface GroceryListItemProps {
@@ -28,6 +28,7 @@ export const GroceryListItem: React.FC<GroceryListItemProps> = ({
   item, index, onToggle, onEdit, onDelete,
 }) => {
   const acquired = item.acquired;
+  console.log(`item: ${item.item} number is NaN: ${isNaN(Number(item.quantity))}`)
 
   return (
     <SwipeableItem onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)}>
@@ -41,24 +42,15 @@ export const GroceryListItem: React.FC<GroceryListItemProps> = ({
             <polyline points="2,6 5,9 10,3" stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </CheckCircle>
+        {' '}
         <ItemBody>
           <ItemName
             $acquired={acquired}
-          >
+            >
             {item.item}
           </ItemName>
-          <ItemMeta>
-            {!acquired && item.store.length > 0 && <>{item.store.join(', ')} · </>}
-            {item.department}
-          </ItemMeta>
         </ItemBody>
-        <QtyBadge>{item.quantity}</QtyBadge>
-        <ActionRow>
-          {!acquired && (
-            <IconBtn $variant="edit" onClick={() => onEdit(item)} aria-label="Edit">✎</IconBtn>
-          )}
-          <IconBtn $variant="delete" onClick={() => onDelete(item.id)} aria-label="Delete">✕</IconBtn>
-        </ActionRow>
+        {(Number(item.quantity) > 1 || isNaN(Number(item.quantity))) && <QtyBadge>{item.quantity}</QtyBadge>}
       </ItemCard>
     </SwipeableItem>
   );
