@@ -9,6 +9,14 @@ export const ListArea = styled.main`
   -webkit-overflow-scrolling: touch;
 `;
 
+export const SectionLabelRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 16px 0 8px;
+`;
+
 export const SectionLabel = styled.div`
   background: #c4ef9d;
   font-size: 10px;
@@ -16,10 +24,48 @@ export const SectionLabel = styled.div`
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #222;
-  margin: 16px 0 8px;
   padding: 4px 10px;
   border-radius: 8px;
   font-family: 'Georgia', serif;
+`;
+
+// Sits in the same row as SectionLabel. `$armed` is the inline
+// "tap again to confirm" state — first tap warns, second tap deletes.
+export const ClearAcquiredBtn = styled.button<{ $armed: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: ${p => p.$armed ? '#ff8a80' : 'none'};
+  border: 1px solid ${p => p.$armed ? '#ff8a80' : '#ddd'};
+  color: ${p => p.$armed ? '#fff' : '#999'};
+  font-family: 'Georgia', serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  &:hover {
+    border-color: ${p => p.$armed ? '#ff8a80' : '#bbb'};
+    color: ${p => p.$armed ? '#fff' : '#666'};
+  }
+
+  &:focus-visible {
+    outline: 2px solid #999;
+    outline-offset: 2px;
+  }
+`;
+
+export const ClearAcquiredIcon = styled.span<{ $src: string }>`
+  width: 11px;
+  height: 11px;
+  background-color: currentColor;
+  flex-shrink: 0;
+  -webkit-mask: url(${p => p.$src}) center / contain no-repeat;
+  mask: url(${p => p.$src}) center / contain no-repeat;
 `;
 
 export const DeptHeader = styled.div`

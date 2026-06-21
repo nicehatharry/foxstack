@@ -12,12 +12,13 @@ import { useItemForm } from './useItemForm';
 import { GroceryListItem } from './GroceryListItem';
 
 import signOutIconSrc from '../assets/sign-out.svg';
+import trashIconSrc from '../assets/trash-icon.svg';
 
 import { AppShell } from './styles/layout';
 import { TopBar, TopBarRow, AppTitle, SignOutBtn, SignOutIcon, SyncBar, SyncDot } from './styles/header';
 import { AlertBanner, AlertAction } from './styles/alert';
 import { FilterBar, FilterPill, SortBar, SortBtn } from './styles/filters';
-import { ListArea, SectionLabel, DeptHeader, EmptyState } from './styles/itemList';
+import { ListArea, SectionLabelRow, SectionLabel, ClearAcquiredBtn, ClearAcquiredIcon, DeptHeader, EmptyState } from './styles/itemList';
 import { Overlay, Sheet, SheetHandle, SheetTitle, FieldGrid, FieldFull, FieldLabel, FieldInput, FieldSelect, StoreChipGrid, StoreChip, SubmitBtn } from './styles/sheet';
 import { FAB } from './styles/fab';
 import type { GroceryItem } from './GroceryList.types';
@@ -73,6 +74,11 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   const [filterStore, setFilterStore] = useState<string>('All');
   const [doShowAll, setShowAll] = useState<boolean>(false);
 
+  // "Tap again to confirm" state for the Clear Acquired button.
+  // Resets whenever the store filter changes so an armed confirm
+  // doesn't silently apply to a different set of items than the user saw.
+  const [clearArmed, setClearArmed] = useState<boolean>(false);
+
   const toggleAcquired = (id: string) => {
     updateItems(prev => prev.map(i => i.id === id ? { ...i, acquired: !i.acquired } : i));
   };
@@ -83,9 +89,27 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
     });
   };
 
+  const handleSelectStore = (store: string) => {
+    setFilterStore(store);
+    setClearArmed(false);
+  };
+
   const processed = filterAndSortItems(items, filterStore, isDeptSort);
   const pending = processed.filter(i => !i.acquired);
   const acquired = processed.filter(i => i.acquired);
+
+  // Deletes only the acquired items currently visible under the active
+  // store filter — not every acquired item in the underlying list — so
+  // the button does exactly what's on screen, no surprises.
+  const handleClearAcquired = () => {
+    if (!clearArmed) {
+      setClearArmed(true);
+      return;
+    }
+    const idsToRemove = new Set(acquired.map(i => i.id));
+    updateItems(prev => prev.filter(i => !idsToRemove.has(i.id)));
+    setClearArmed(false);
+  };
 
   return (
     <>
@@ -112,7 +136,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
         {/* Store filters */}
         <FilterBar>
           {['All', ...storeOptions].map(store => (
-            <FilterPill key={store} $active={filterStore === store} onClick={() => setFilterStore(store)}>
+            <FilterPill key={store} $active={filterStore === store} onClick={() => handleSelectStore(store)}>
               {store}
             </FilterPill>
           ))}
@@ -136,7 +160,14 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
         <SortBar>
           <SortBtn key={'department-sort'} $active={isDeptSort} onClick={() => handleSort()}>{'Dept Sort'}</SortBtn>
           <span style={{ color: '#ccc', alignSelf: 'center', fontSize: 12, margin: '0 4px' }}>·</span>
-          <SortBtn key={'show-all'} $active={doShowAll} onClick={() => setShowAll(prev => !prev)}>{'Show All'}</SortBtn>
+          <SortBtn
+            key={'show-all'}
+            $active={doShowAll}
+            onClick={() => {
+              setShowAll(prev => !prev);
+              setClearArmed(false);
+            }}
+          >{'Show All'}</SortBtn>
         </SortBar>
 
         {/* Item List */}
@@ -164,7 +195,19 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
 
           {doShowAll && acquired.length > 0 && (
             <>
-              <SectionLabel>In Cart</SectionLabel>
+              <SectionLabelRow>
+                <SectionLabel>In Cart</SectionLabel>
+                <ClearAcquiredBtn
+                  type="button"
+                  $armed={clearArmed}
+                  onClick={handleClearAcquired}
+                  onBlur={() => setClearArmed(false)}
+                  disabled={syncStatus !== 'idle'}
+                  aria-label={clearArmed ? 'Tap again to confirm clearing acquired items' : 'Clear acquired items'}
+                >
+                  <ClearAcquiredIcon $src={trashIconSrc} aria-hidden="true" />
+                </ClearAcquiredBtn>
+              </SectionLabelRow>
               {acquired.map((item, i) => (
                 <GroceryListItem
                   key={item.id}

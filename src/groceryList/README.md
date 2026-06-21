@@ -15,6 +15,7 @@ A single-page grocery list app (Amplify auth + S3-backed storage)
 | Change how a single list row looks/behaves                   | `GroceryListItem.tsx` + `styles/itemList.ts` |
 | Restyle the header, filter pills, sheet, or FAB               | the matching file under `styles/`         |
 | Change overall page layout / wire something new into the JSX | `GroceryList.tsx`                         |
+| Change "Clear acquired" button behavior (what gets deleted, confirm step) | `GroceryList.tsx` (`handleClearAcquired`, `clearArmed` state) + `styles/itemList.ts` (`ClearAcquiredBtn`) |
 
 ## File map
 
@@ -28,7 +29,7 @@ src/
     └── aws.ts                    all other AWS configuration
 ├── groceryList/
     ├── index.ts                  barrel re-export, keeps external imports unchanged
-    ├── GroceryList.tsx           main component: hook orchestration + JSX layout; selector to render department headers lives here
+    ├── GroceryList.tsx           main component: hook orchestration + JSX layout; selector to render department headers AND the "tap again to confirm" Clear Acquired handler both live here
     ├── GroceryList.types.ts      canonical types (GroceryItem, SyncStatus, ItemData)
     ├── GroceryList.constants.ts  departments, store options, poll/debounce timing
     ├── GroceryList.utils.ts      pure filterAndSortItems()
@@ -43,7 +44,7 @@ src/
         ├── header.ts              TopBar, title, stats, sync indicator
         ├── alert.ts               conflict/error banner
         ├── filters.ts             department pills + status/sort bar
-        ├── itemList.ts            list container + item card pieces + empty state
+        ├── itemList.ts            list container + item card pieces + empty state + SectionLabelRow/ClearAcquiredBtn (the "In Cart" boundary)
         ├── sheet.ts               bottom sheet + form fields
         └── fab.ts                 floating "+" button
 └── services/
@@ -63,3 +64,28 @@ useGrocerySync ──items, updateItems──▶ GroceryList.tsx ──▶ Groce
                                               │
                                               └──▶ useItemForm (uses updateItems too)
 ```
+
+## Pending/acquired boundary ("In Cart" section)
+
+Only rendered when `doShowAll` is on and there's at least one acquired
+item. Lives inline in `GroceryList.tsx` (not split into its own
+component file — it's one row of JSX plus a handler, and splitting it
+out would just add an indirection layer for no real reuse benefit).
+
+- `SectionLabelRow` (in `styles/itemList.ts`) is the flex row holding
+  the "In Cart" label and the Clear button side by side.
+- **Clear Acquired** deletes via `updateItems`, going through the same
+  debounced S3 save as every other mutation — no special-casing.
+- It only deletes what's **currently visible** under the active store
+  filter (i.e. `acquired`, the already-filtered array), not every
+  acquired item in the underlying `items` list. If "Costco" is
+  selected, clearing only removes acquired Costco items.
+- **Confirm pattern**: first tap arms the button (`clearArmed = true`,
+  button turns red, label flips to "Tap again"); second tap actually
+  deletes. `clearArmed` resets on blur, on changing the store filter,
+  and on toggling "Show All" off — so an armed confirm never silently
+  carries over to a different set of items than the one the user was
+  looking at when they armed it.
+- This inline-arm/confirm approach (vs. a modal or `window.confirm`)
+  is the established pattern for destructive actions in this app —
+  reuse it if another one gets added later.
