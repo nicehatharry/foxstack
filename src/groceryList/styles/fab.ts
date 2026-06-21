@@ -24,4 +24,8 @@ export const FAB = styled.button`
   &:active {
     transform: translateX(calc(50% - 16px)) scale(0.93);
   }
+
+  &:disabled {
+    display: none;
+  }
 `;

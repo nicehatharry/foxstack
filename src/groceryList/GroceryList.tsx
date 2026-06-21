@@ -155,7 +155,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
         </ListArea>
 
         {/* FAB */}
-        <FAB onClick={openAdd} aria-label="Add item">+</FAB>
+        <FAB onClick={openAdd} aria-label="Add item" disabled={syncStatus != 'idle'}>+</FAB>
 
         {/* Overlay */}
         <Overlay $visible={sheetOpen} onClick={handleClose} />
