@@ -6,19 +6,19 @@ import { STORE_OPTIONS } from '../services/s3Storage';
  * here to change both at once.
  */
 export const departments = [
-  'Produce',
-  'Dairy/Eggs',
-  'Meat/Fish',
   'Baby',
-  'Beverage',
-  'Snacks',
-  'Condiments',
   'Baking',
-  'Pantry',
-  'Refrigerated',
+  'Beverage',
+  'Condiments',
+  'Dairy/Eggs',
   'Frozen',
   'Household',
+  'Meat/Fish',
   'Non-food',
+  'Pantry',
+  'Produce',
+  'Refrigerated',
+  'Snacks',
 ];
 
 /**

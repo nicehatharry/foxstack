@@ -47,9 +47,9 @@ import { awsConfig } from '../config/aws';
 export const STORE_OPTIONS = [
   'Aldi',
   "Trader Joe's",
-  'Target',
   'Whole Foods',
   'Regular Grocery',
+  'Target',
   'Hardware Store',
   'Other',
 ] as const;
