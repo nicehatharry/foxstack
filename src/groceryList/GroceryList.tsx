@@ -19,7 +19,8 @@ import { TopBar, TopBarRow, AppTitle, SignOutBtn, SignOutIcon, SyncBar, SyncDot 
 import { AlertBanner, AlertAction } from './styles/alert';
 import { FilterBar, FilterPill, SortBar, SortBtn } from './styles/filters';
 import { ListArea, SectionLabelRow, SectionLabel, ClearAcquiredBtn, ClearAcquiredIcon, DeptHeader, EmptyState } from './styles/itemList';
-import { Overlay, Sheet, SheetHandle, SheetTitle, FieldGrid, FieldFull, FieldLabel, FieldInput, FieldSelect, StoreChipGrid, StoreChip, SubmitBtn } from './styles/sheet';
+import { Overlay, Sheet, SheetHandle, SheetTitle, FieldGrid, FieldFull, FieldLabel, FieldInput, FieldTextarea, FieldSelect, StoreChipGrid, StoreChip, SubmitBtn } from './styles/sheet';
+import { ModalOverlay, ModalCard, ModalItemName, ModalNoteText } from './styles/modal';
 import { FAB } from './styles/fab';
 import type { GroceryItem } from './GroceryList.types';
 
@@ -36,6 +37,7 @@ function renderSectionItems(
     onToggle: (id: string) => void;
     onEdit: (item: GroceryItem) => void;
     onDelete: (id: string) => void;
+    onShowNotes: (item: GroceryItem) => void;
   }
 ) {
   let lastDept: string | null = null;
@@ -53,6 +55,7 @@ function renderSectionItems(
           onToggle={handlers.onToggle}
           onEdit={handlers.onEdit}
           onDelete={handlers.onDelete}
+          onShowNotes={handlers.onShowNotes}
         />
       </React.Fragment>
     );
@@ -73,6 +76,9 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   const [isDeptSort, setDeptSort] = useState<boolean>(true);
   const [filterStore, setFilterStore] = useState<string>('All');
   const [doShowAll, setShowAll] = useState<boolean>(false);
+
+  // Notes modal — holds the item whose note is being displayed, or null when closed.
+  const [notesItem, setNotesItem] = useState<GroceryItem | null>(null);
 
   // "Tap again to confirm" state for the Clear Acquired button.
   // Resets whenever the store filter changes so an armed confirm
@@ -206,6 +212,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
                 onToggle: toggleAcquired,
                 onEdit: handleEdit,
                 onDelete: handleDelete,
+                onShowNotes: setNotesItem,
               })}
             </>
           )}
@@ -233,6 +240,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
                   onToggle={toggleAcquired}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onShowNotes={setNotesItem}
                 />
               ))}
             </>
@@ -299,6 +307,16 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
                   ))}
                 </StoreChipGrid>
               </FieldFull>
+
+              <FieldFull>
+                <FieldLabel>Notes</FieldLabel>
+                <FieldTextarea
+                  name="notes"
+                  value={formData.notes ?? ''}
+                  onChange={handleInputChange}
+                  placeholder="Brand, size, substitutions…"
+                />
+              </FieldFull>
             </FieldGrid>
 
             <SubmitBtn type="submit">
@@ -306,6 +324,16 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
             </SubmitBtn>
           </form>
         </Sheet>
+
+        {/* Notes modal */}
+        <ModalOverlay $visible={notesItem !== null} onClick={() => setNotesItem(null)}>
+          {notesItem && (
+            <ModalCard onClick={e => e.stopPropagation()}>
+              <ModalItemName>{notesItem.item}</ModalItemName>
+              <ModalNoteText>{notesItem.notes}</ModalNoteText>
+            </ModalCard>
+          )}
+        </ModalOverlay>
       </AppShell>
     </>
   );

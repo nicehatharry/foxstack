@@ -19,4 +19,6 @@ export interface ItemData {
   department: string;
   quantity: string;
   acquired: boolean;
+  /** Free-text note attached to an item. Optional — omitted means no note. */
+  notes?: string;
 }

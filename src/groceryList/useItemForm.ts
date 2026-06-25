@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import type { ItemData, GroceryItem } from './GroceryList.types';
 
-const EMPTY_FORM: ItemData = { item: '', store: [], department: 'Produce', quantity: '1', acquired: false };
+const EMPTY_FORM: ItemData = { item: '', store: [], department: 'Produce', quantity: '1', acquired: false, notes: '' };
 
 /**
  * Controls the add/edit bottom sheet: open/closed state, which item (if
@@ -33,14 +33,14 @@ export function useItemForm(
   const openAdd = () => { resetForm(); setSheetOpen(true); };
 
   const handleEdit = (item: GroceryItem) => {
-    setItemData({ item: item.item, store: item.store, department: item.department, quantity: item.quantity, acquired: item.acquired });
+    setItemData({ item: item.item, store: item.store, department: item.department, quantity: item.quantity, acquired: item.acquired, notes: item.notes ?? '' });
     setEditingId(item.id);
     setSheetOpen(true);
   };
 
   const handleClose = () => { setSheetOpen(false); resetForm(); };
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setItemData(prev => ({
       ...prev,
@@ -64,10 +64,10 @@ export function useItemForm(
 
     if (editingId) {
       updateItems(prev =>
-        prev.map(i => i.id === editingId ? { ...itemData, id: editingId, quantity: itemData.quantity } : i)
+        prev.map(i => i.id === editingId ? { ...itemData, id: editingId, quantity: itemData.quantity, notes: itemData.notes ?? '' } : i)
       );
     } else {
-      const newItem: GroceryItem = { ...itemData, acquired: false, id: Date.now().toString(), quantity: itemData.quantity };
+      const newItem: GroceryItem = { ...itemData, acquired: false, id: Date.now().toString(), quantity: itemData.quantity, notes: itemData.notes ?? '' };
       updateItems(prev => [...prev, newItem]);
     }
     handleClose();

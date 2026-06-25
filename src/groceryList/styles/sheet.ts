@@ -18,10 +18,15 @@ export const Sheet = styled.div<{ $visible: boolean }>`
   transform: translateX(-50%) translateY(${p => p.$visible ? '0' : '100%'});
   width: 100%;
   max-width: 430px;
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border-radius: 20px 20px 0 0;
   z-index: 300;
   padding: 0 20px 32px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
   animation: ${p => p.$visible ? css`${slideUp} 0.3s cubic-bezier(0.32, 0.72, 0, 1)` : 'none'};
@@ -80,6 +85,31 @@ export const FieldInput = styled.input`
   &:focus {
     border-color: #1a1a1a;
     background: #fff;
+  }
+`;
+
+export const FieldTextarea = styled.textarea`
+  width: 100%;
+  padding: 11px 12px;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: 'Georgia', serif;
+  background: #fafafa;
+  color: #1a1a1a;
+  outline: none;
+  resize: none;
+  min-height: 76px;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: #1a1a1a;
+    background: #fff;
+  }
+
+  &::placeholder {
+    color: #bbb;
   }
 `;
 

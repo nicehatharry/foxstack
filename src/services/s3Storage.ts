@@ -63,6 +63,9 @@ export interface GroceryItem {
   department: string;
   quantity: string;
   acquired: boolean;
+  /** Free-text note (brand, size, substitutions, etc.). Optional — absent on
+   *  items created before this field existed, treated as empty string in UI. */
+  notes?: string;
 }
 
 export type SyncStatus = 'idle' | 'loading' | 'saving' | 'conflict' | 'error';

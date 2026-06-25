@@ -7,7 +7,7 @@ A single-page grocery list app (Amplify auth + S3-backed storage)
 | If you're asked to...                                      | Open this file                          |
 |--------------------------------------------------------------|------------------------------------------|
 | Add/remove a form field, change validation                  | `useItemForm.ts`                          |
-| Change item shape (new field on a grocery item)              | `GroceryList.types.ts` (then likely `useItemForm.ts`, `GroceryListItem.tsx`, `styles/sheet.ts`) |
+| Change item shape (new field on a grocery item)              | `s3Storage.ts` (`GroceryItem` interface) → `GroceryList.types.ts` (`ItemData`) → `useItemForm.ts` (`EMPTY_FORM`, `handleEdit`, `handleSubmit`) → form JSX in `GroceryList.tsx` → `GroceryListItem.tsx` if the field needs a visual in the row |
 | Fix saving/sync/conflict/polling behavior                    | `useGrocerySync.ts`                       |
 | Change sort or filter logic                                  | `GroceryList.utils.ts`                    |
 | Add a department, change debounce/poll timing                | `GroceryList.constants.ts`                |
@@ -30,7 +30,7 @@ src/
 ├── groceryList/
     ├── index.ts                  barrel re-export, keeps external imports unchanged
     ├── GroceryList.tsx           main component: hook orchestration + JSX layout; selector to render department headers AND the "tap again to confirm" Clear Acquired handler both live here
-    ├── GroceryList.types.ts      canonical types (GroceryItem, SyncStatus, ItemData)
+    ├── GroceryList.types.ts      canonical types (re-exports GroceryItem/SyncStatus from s3Storage.ts; defines ItemData for the form)
     ├── GroceryList.constants.ts  departments, store options, poll/debounce timing
     ├── GroceryList.utils.ts      pure filterAndSortItems()
     ├── useGrocerySync.ts         S3 load/save/poll/conflict — owns `items` state
@@ -45,6 +45,7 @@ src/
         ├── alert.ts               conflict/error banner
         ├── filters.ts             department pills + status/sort bar
         ├── itemList.ts            list container + item card pieces + empty state + SectionLabelRow/ClearAcquiredBtn (the "In Cart" boundary)
+        ├── modal.ts               notes modal overlay + card (ModalOverlay, ModalCard, ModalItemName, ModalNoteText, ModalDismissBtn)
         ├── sheet.ts               bottom sheet + form fields
         └── fab.ts                 floating "+" button
 └── services/
@@ -89,3 +90,28 @@ out would just add an indirection layer for no real reuse benefit).
 - This inline-arm/confirm approach (vs. a modal or `window.confirm`)
   is the established pattern for destructive actions in this app —
   reuse it if another one gets added later.
+
+## Notes field
+
+Optional free-text per item (brand, size, substitutions, etc.).
+
+- Stored as `notes?: string` on `GroceryItem` (in `s3Storage.ts`) — the `?`
+  makes it backward-compatible; items saved before this field existed simply
+  have no `notes` key and are treated as `''` throughout the UI.
+- `ItemData` in `GroceryList.types.ts` mirrors it as `notes?: string`.
+- `EMPTY_FORM` in `useItemForm.ts` initialises it to `''`; `handleEdit`
+  maps `item.notes ?? ''`; `handleSubmit` persists it on both add and edit.
+- The form renders a `FieldTextarea` (in `styles/sheet.ts`) as the last
+  field, full-width, below the store chips.
+- **In the list row**: when `item.notes` is non-empty a circle-ⓘ
+  (`InfoIcon` in `styles/itemList.ts`) appears immediately to the right
+  of the item name inside `ItemBody`. Tapping it opens a read-only notes
+  modal (not the edit sheet). The note text is never shown inline in the row.
+- **Notes modal**: `notesItem` state in `GroceryList.tsx` holds the item
+  being viewed, or `null` when closed. The modal lives in `styles/modal.ts`
+  (`ModalOverlay`, `ModalCard`, `ModalItemName`, `ModalNoteText`,
+  `ModalDismissBtn`). Tapping the overlay or the "Done" button closes it.
+  `ModalCard` stops propagation so clicks on the card don't bubble to the
+  overlay dismiss handler.
+- To edit a note, use swipe-left on the row as normal — the modal is
+  intentionally read-only.

@@ -118,6 +118,9 @@ export const CheckCircle = styled.button<{ $checked: boolean }>`
 export const ItemBody = styled.div`
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 `;
 
 export const ItemName = styled.div<{ $acquired: boolean }>`
@@ -158,4 +161,41 @@ export const EmptyState = styled.div`
   font-style: italic;
   font-size: 15px;
   line-height: 1.6;
+`;
+
+/**
+ * Circle-ⓘ icon button shown on list rows that have a note.
+ * Tapping it opens the edit sheet — same as the swipe-left gesture.
+ * Intentionally no visible label; aria-label carries the accessible name.
+ */
+export const InfoIcon = styled.button`
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid #c8c8c8;
+  background: transparent;
+  color: #aaa;
+  font-size: 12px;
+  font-family: 'Georgia', serif;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    border-color: #888;
+    color: #555;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #999;
+    outline-offset: 2px;
+  }
 `;

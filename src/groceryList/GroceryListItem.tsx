@@ -2,7 +2,7 @@ import React from 'react';
 import type { GroceryItem } from './GroceryList.types';
 import { SwipeableItem } from './SwipeableItem';
 import {
-  ItemCard, CheckCircle, ItemBody, ItemName, QtyBadge,
+  ItemCard, CheckCircle, ItemBody, ItemName, QtyBadge, InfoIcon,
 } from './styles/itemList';
 
 interface GroceryListItemProps {
@@ -13,6 +13,8 @@ interface GroceryListItemProps {
   onToggle: (id: string) => void;
   onEdit: (item: GroceryItem) => void;
   onDelete: (id: string) => void;
+  /** Called when the circle-ⓘ icon is tapped. Opens the notes modal. */
+  onShowNotes: (item: GroceryItem) => void;
 }
 
 /**
@@ -25,7 +27,7 @@ interface GroceryListItemProps {
  *    an inline line-through style on the name.
  */
 export const GroceryListItem: React.FC<GroceryListItemProps> = ({
-  item, index, onToggle, onEdit, onDelete,
+  item, index, onToggle, onEdit, onDelete, onShowNotes,
 }) => {
   const acquired = item.acquired;
   console.log(`item: ${item.item} number is NaN: ${isNaN(Number(item.quantity))}`)
@@ -44,11 +46,23 @@ export const GroceryListItem: React.FC<GroceryListItemProps> = ({
         </CheckCircle>
         {' '}
         <ItemBody>
-          <ItemName
-            $acquired={acquired}
-            >
+          <ItemName $acquired={acquired}>
             {item.item}
           </ItemName>
+          {item.notes && (
+            <InfoIcon
+              type="button"
+              onClick={(e) => {
+                // stopPropagation prevents SwipeableItem's onPointerDown
+                // from treating this tap as the start of a swipe gesture.
+                e.stopPropagation();
+                onShowNotes(item);
+              }}
+              aria-label={`View notes for ${item.item}`}
+            >
+              i
+            </InfoIcon>
+          )}
         </ItemBody>
         {(Number(item.quantity) > 1 || isNaN(Number(item.quantity))) && <QtyBadge>{item.quantity}</QtyBadge>}
       </ItemCard>
