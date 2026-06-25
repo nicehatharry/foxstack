@@ -28,6 +28,12 @@
  * 4. POLLING — getRemoteEtag() issues a cheap HEAD request (no data transfer)
  *    to detect remote changes. The component polls on an interval and reloads
  *    when the ETag diverges from the last known value.
+ *
+ * 5. ITEM HISTORY — a separate document at `grocery-lists/history.json`.
+ *    Maps item name (lowercased) → last-used field values (store, department,
+ *    quantity, notes). No ETag locking on this file: history saves are
+ *    best-effort and a last-write-wins race between two concurrent users
+ *    is harmless. Acquired status is intentionally excluded from history.
  */
 
 import { S3Client, GetObjectCommand, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
@@ -80,6 +86,26 @@ export interface SaveResult {
   conflict: boolean;  // true when S3 returned 412 (someone else saved first)
 }
 
+/**
+ * Stored fields for a single historical item entry.
+ * Acquired status is intentionally excluded — history always populates
+ * new items as not-acquired regardless of how the item was last saved.
+ */
+export interface HistoryEntry {
+  store: string[];
+  department: string;
+  quantity: string;
+  notes: string;
+}
+
+/**
+ * The history document shape: a map of lowercased item name → last-used
+ * field values. Lowercasing the key makes lookups case-insensitive while
+ * preserving the display name inside HistoryEntry implicitly via the
+ * actual item name on each GroceryItem.
+ */
+export type ItemHistory = Record<string, HistoryEntry>;
+
 // ---------------------------------------------------------------------------
 // S3 client — cached by ID token string
 // ---------------------------------------------------------------------------
@@ -126,6 +152,9 @@ async function getS3Client(): Promise<S3Client> {
 
 const { bucket, key } = awsConfig.s3;
 
+// History lives alongside the main list in the same S3 prefix.
+const historyKey = 'grocery-lists/history.json';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -156,7 +185,7 @@ async function bodyToString(body: unknown): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
-// Public API
+// Public API — grocery list
 // ---------------------------------------------------------------------------
 
 /**
@@ -238,4 +267,45 @@ export async function getRemoteEtag(): Promise<string | null> {
     if (code === 'NoSuchKey' || code === 'NotFound') return null;
     throw err;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Public API — item history
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the history document from S3.
+ * Returns an empty object when the file does not yet exist (first run).
+ * History saves are best-effort so no ETag locking is used here.
+ */
+export async function loadHistory(): Promise<ItemHistory> {
+  const s3 = await getS3Client();
+  try {
+    const response = await s3.send(
+      new GetObjectCommand({ Bucket: bucket, Key: historyKey })
+    );
+    const raw = await bodyToString(response.Body);
+    return JSON.parse(raw) as ItemHistory;
+  } catch (err: unknown) {
+    const code = (err as { name?: string })?.name;
+    if (code === 'NoSuchKey' || code === 'NotFound') {
+      return {};
+    }
+    throw err;
+  }
+}
+
+/**
+ * Persist the history document to S3. No ETag guard — history writes are
+ * best-effort and a last-write-wins race between concurrent users is harmless
+ * (one user's recent choice slightly overwrites another's; both are valid).
+ */
+export async function saveHistory(history: ItemHistory): Promise<void> {
+  const s3 = await getS3Client();
+  await s3.send(new PutObjectCommand({
+    Bucket:      bucket,
+    Key:         historyKey,
+    Body:        JSON.stringify(history),
+    ContentType: 'application/json',
+  }));
 }

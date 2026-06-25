@@ -1,6 +1,6 @@
 import '../config/amplify'; // must be first
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { withAuthenticator, type WithAuthenticatorProps } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 
@@ -19,7 +19,12 @@ import { TopBar, TopBarRow, AppTitle, SignOutBtn, SignOutIcon, SyncBar, SyncDot 
 import { AlertBanner, AlertAction } from './styles/alert';
 import { FilterBar, FilterPill, SortBar, SortBtn } from './styles/filters';
 import { ListArea, SectionLabelRow, SectionLabel, ClearAcquiredBtn, ClearAcquiredIcon, DeptHeader, EmptyState } from './styles/itemList';
-import { Overlay, Sheet, SheetHandle, SheetTitle, FieldGrid, FieldFull, FieldLabel, FieldInput, FieldTextarea, FieldSelect, StoreChipGrid, StoreChip, SubmitBtn } from './styles/sheet';
+import {
+  Overlay, Sheet, SheetHandle, SheetTitle,
+  FieldGrid, FieldFull, FieldLabel, FieldInput, FieldTextarea, FieldSelect,
+  StoreChipGrid, StoreChip, SubmitBtn,
+  AutocompleteWrapper, SuggestionDropdown, SuggestionItem,
+} from './styles/sheet';
 import { ModalOverlay, ModalCard, ModalItemName, ModalNoteText } from './styles/modal';
 import { FAB } from './styles/fab';
 import type { GroceryItem } from './GroceryList.types';
@@ -70,6 +75,15 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   const {
     formData, editingId, sheetOpen,
     openAdd, handleEdit, handleClose, handleInputChange, handleStoreToggle, handleSubmit, handleDelete,
+    // Autocomplete
+    nameInputRef,
+    suggestions,
+    activeSuggestion,
+    dropdownOpen,
+    closeDropdown,
+    selectSuggestion,
+    handleNameFocus,
+    handleNameKeyDown,
   } = useItemForm(updateItems);
 
   // View-only UI state (filtering/sorting the list, not the data itself)
@@ -81,16 +95,69 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   const [notesItem, setNotesItem] = useState<GroceryItem | null>(null);
 
   // "Tap again to confirm" state for the Clear Acquired button.
-  // Resets whenever the store filter changes so an armed confirm
-  // doesn't silently apply to a different set of items than the user saw.
   const [clearArmed, setClearArmed] = useState<boolean>(false);
   const clearBtnRef = useRef<HTMLButtonElement>(null);
 
-  // Disarm on tap-away. onBlur is unreliable on mobile (only fires when
-  // focus moves to another focusable element), so we attach a document-level
-  // pointerdown listener instead — it fires for any tap anywhere on the page.
-  // The listener is only active while the button is armed, and is cleaned up
-  // as soon as it disarms, so there's no overhead when nothing is pending.
+  // ---------------------------------------------------------------------------
+  // Autocomplete dropdown positioning
+  //
+  // The Sheet has overflow-y: auto, which clips any absolutely-positioned
+  // child. To escape this, SuggestionDropdown is position: fixed and its
+  // top/left/width are set from the input element's bounding rect, measured
+  // on every render while the dropdown is open. A ResizeObserver + scroll
+  // listener keep the position accurate when the virtual keyboard appears or
+  // the user scrolls the sheet.
+  // ---------------------------------------------------------------------------
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+
+  const measureDropdown = useCallback(() => {
+    if (!nameInputRef.current) return;
+    const rect = nameInputRef.current.getBoundingClientRect();
+    setDropdownStyle({
+      top:   rect.bottom + 4,
+      left:  rect.left,
+      width: rect.width,
+    });
+  }, [nameInputRef]);
+
+  useEffect(() => {
+    if (!dropdownOpen || !nameInputRef.current) return;
+
+    measureDropdown();
+
+    // Re-measure when the viewport resizes (keyboard appear/disappear on mobile).
+    window.addEventListener('resize', measureDropdown);
+    // Re-measure on scroll inside the sheet (unlikely but defensive).
+    window.addEventListener('scroll', measureDropdown, true);
+
+    return () => {
+      window.removeEventListener('resize', measureDropdown);
+      window.removeEventListener('scroll', measureDropdown, true);
+    };
+  }, [dropdownOpen, measureDropdown]);
+
+  // Close dropdown when tapping anywhere outside the name input + dropdown.
+  // We use pointerdown (not click) so it fires before the input's onBlur,
+  // giving selectSuggestion a chance to run first on taps inside the list.
+  const dropdownRef = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (
+        !nameInputRef.current?.contains(target) &&
+        !dropdownRef.current?.contains(target)
+      ) {
+        closeDropdown();
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [dropdownOpen, closeDropdown, nameInputRef]);
+
+  // ---------------------------------------------------------------------------
+  // Clear Acquired disarm on tap-away (existing behaviour)
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!clearArmed) return;
     const handlePointerDown = (e: PointerEvent) => {
@@ -106,11 +173,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
     updateItems(prev => prev.map(i => i.id === id ? { ...i, acquired: !i.acquired } : i));
   };
 
-  const handleSort = () => {
-    setDeptSort(prev => {
-      return !prev;
-    });
-  };
+  const handleSort = () => setDeptSort(prev => !prev);
 
   const handleSelectStore = (store: string) => {
     setFilterStore(store);
@@ -121,14 +184,8 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   const pending = processed.filter(i => !i.acquired);
   const acquired = processed.filter(i => i.acquired);
 
-  // Deletes only the acquired items currently visible under the active
-  // store filter — not every acquired item in the underlying list — so
-  // the button does exactly what's on screen, no surprises.
   const handleClearAcquired = () => {
-    if (!clearArmed) {
-      setClearArmed(true);
-      return;
-    }
+    if (!clearArmed) { setClearArmed(true); return; }
     const idsToRemove = new Set(acquired.map(i => i.id));
     updateItems(prev => prev.filter(i => !idsToRemove.has(i.id)));
     setClearArmed(false);
@@ -152,7 +209,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
             {syncStatus === 'loading'  && 'Loading…'}
             {syncStatus === 'error'    && 'Save failed'}
             {syncStatus === 'conflict' && 'Refreshing…'}
-            {syncStatus === 'idle' && 'Ready'}
+            {syncStatus === 'idle'     && 'Ready'}
           </SyncBar>
         </TopBar>
 
@@ -181,41 +238,31 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
 
         {/* Status + Sort */}
         <SortBar>
-          <SortBtn key={'department-sort'} $active={isDeptSort} onClick={() => handleSort()}>{'Dept Sort'}</SortBtn>
+          <SortBtn $active={isDeptSort} onClick={handleSort}>Dept Sort</SortBtn>
           <span style={{ color: '#ccc', alignSelf: 'center', fontSize: 12, margin: '0 4px' }}>·</span>
           <SortBtn
-            key={'show-all'}
             $active={doShowAll}
-            onClick={() => {
-              setShowAll(prev => !prev);
-              setClearArmed(false);
-            }}
-          >{'Show All'}</SortBtn>
+            onClick={() => { setShowAll(prev => !prev); setClearArmed(false); }}
+          >Show All</SortBtn>
         </SortBar>
 
         {/* Item List */}
         <ListArea>
-          {(syncStatus == 'idle' && processed.length === 0) && (
+          {(syncStatus === 'idle' && processed.length === 0) && (
             <EmptyState>
               Your list is empty.<br />Tap <strong>+</strong> to add your first item.
             </EmptyState>
           )}
-          {(syncStatus == 'loading' && processed.length === 0) && (
-            <EmptyState>
-              Loading...
-            </EmptyState>
+          {(syncStatus === 'loading' && processed.length === 0) && (
+            <EmptyState>Loading...</EmptyState>
           )}
 
-          {pending.length > 0 && (
-            <>
-              {renderSectionItems(pending, isDeptSort, {
-                onToggle: toggleAcquired,
-                onEdit: handleEdit,
-                onDelete: handleDelete,
-                onShowNotes: setNotesItem,
-              })}
-            </>
-          )}
+          {pending.length > 0 && renderSectionItems(pending, isDeptSort, {
+            onToggle: toggleAcquired,
+            onEdit: handleEdit,
+            onDelete: handleDelete,
+            onShowNotes: setNotesItem,
+          })}
 
           {doShowAll && acquired.length > 0 && (
             <>
@@ -248,9 +295,9 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
         </ListArea>
 
         {/* FAB */}
-        <FAB onClick={openAdd} aria-label="Add item" disabled={syncStatus != 'idle'}>+</FAB>
+        <FAB onClick={openAdd} aria-label="Add item" disabled={syncStatus !== 'idle'}>+</FAB>
 
-        {/* Overlay */}
+        {/* Sheet overlay */}
         <Overlay $visible={sheetOpen} onClick={handleClose} />
 
         {/* Bottom Sheet Form */}
@@ -260,18 +307,41 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
 
           <form onSubmit={handleSubmit}>
             <FieldGrid>
-              <FieldFull>
-                <FieldLabel>Item name *</FieldLabel>
+
+              {/*
+                Item name — wraps in AutocompleteWrapper to anchor the dropdown.
+                The dropdown itself is position: fixed (see sheet.ts) so it
+                escapes the Sheet's overflow-y: auto scroll container; its
+                coordinates come from dropdownStyle, measured in useEffect above.
+              */}
+              <AutocompleteWrapper>
+                <FieldLabel htmlFor="item-name-input">Item name *</FieldLabel>
                 <FieldInput
+                  id="item-name-input"
+                  ref={nameInputRef}
                   type="text"
                   name="item"
                   value={formData.item}
                   onChange={handleInputChange}
+                  onFocus={handleNameFocus}
+                  onKeyDown={handleNameKeyDown}
                   placeholder="Whole milk"
                   required
                   autoFocus={sheetOpen}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="words"
+                  spellCheck={false}
+                  aria-autocomplete="list"
+                  aria-expanded={dropdownOpen && suggestions.length > 0}
+                  aria-controls="item-suggestions"
+                  aria-activedescendant={
+                    activeSuggestion >= 0
+                      ? `suggestion-${activeSuggestion}`
+                      : undefined
+                  }
                 />
-              </FieldFull>
+              </AutocompleteWrapper>
 
               <div>
                 <FieldLabel>Quantity</FieldLabel>
@@ -317,6 +387,7 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
                   placeholder="Brand, size, substitutions…"
                 />
               </FieldFull>
+
             </FieldGrid>
 
             <SubmitBtn type="submit">
@@ -324,6 +395,42 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
             </SubmitBtn>
           </form>
         </Sheet>
+
+        {/*
+          Autocomplete dropdown — rendered outside the Sheet so it isn't clipped
+          by overflow-y: auto. Position is fixed with coordinates derived from
+          the name input's bounding rect (see dropdownStyle / measureDropdown).
+          z-index 400 sits above the Sheet (300) and its overlay (200).
+
+          onPointerDown uses preventDefault() so the input doesn't blur before
+          selectSuggestion runs — critical on mobile where blur fires on any
+          tap outside the input.
+        */}
+        <SuggestionDropdown
+          id="item-suggestions"
+          ref={dropdownRef}
+          role="listbox"
+          aria-label="Item suggestions"
+          $visible={dropdownOpen && suggestions.length > 0}
+          style={dropdownStyle}
+        >
+          {suggestions.map((key, i) => (
+            <SuggestionItem
+              key={key}
+              id={`suggestion-${i}`}
+              role="option"
+              aria-selected={i === activeSuggestion}
+              $active={i === activeSuggestion}
+              onPointerDown={e => {
+                // Prevent the input from blurring before we can call selectSuggestion.
+                e.preventDefault();
+                selectSuggestion(key);
+              }}
+            >
+              {key.replace(/\b\w/g, c => c.toUpperCase())}
+            </SuggestionItem>
+          ))}
+        </SuggestionDropdown>
 
         {/* Notes modal */}
         <ModalOverlay $visible={notesItem !== null} onClick={() => setNotesItem(null)}>

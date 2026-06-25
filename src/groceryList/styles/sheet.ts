@@ -174,3 +174,71 @@ export const SubmitBtn = styled.button`
     background: #333;
   }
 `;
+
+// ---------------------------------------------------------------------------
+// Autocomplete dropdown
+// ---------------------------------------------------------------------------
+
+/**
+ * Wraps the item name FieldFull to establish a positioning context for the
+ * dropdown. overflow: visible is critical — the dropdown must escape the
+ * Sheet's overflow-y: auto scroll container. This is achieved by rendering
+ * the dropdown as position: fixed (see SuggestionDropdown below) so it
+ * escapes all ancestor overflow clipping entirely.
+ */
+export const AutocompleteWrapper = styled.div`
+  position: relative;
+  grid-column: 1 / -1;
+`;
+
+/**
+ * The suggestion list. Rendered as position: fixed so it escapes the Sheet's
+ * overflow-y: auto and always appears above the keyboard on mobile. Top/left/
+ * width are set via inline style from the input's bounding rect — see
+ * GroceryList.tsx for the measurement logic.
+ *
+ * Max-height is capped so the list never obscures the entire screen, and
+ * -webkit-overflow-scrolling: touch ensures momentum scrolling on iOS.
+ */
+export const SuggestionDropdown = styled.ul<{ $visible: boolean }>`
+  display: ${p => p.$visible ? 'block' : 'none'};
+  position: fixed;
+  z-index: 400;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #fff;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  max-height: 220px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Clip child border-radii correctly */
+  overflow-x: hidden;
+`;
+
+export const SuggestionItem = styled.li<{ $active: boolean }>`
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: 'Georgia', serif;
+  color: #1a1a1a;
+  background: ${p => p.$active ? '#f5f5f5' : 'transparent'};
+  cursor: pointer;
+  /* Generous touch target for phones */
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  /* Smooth background transition for arrow-key navigation */
+  transition: background 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    background: #efefef;
+  }
+
+  /* Hairline divider between items, skipping the first */
+  & + & {
+    border-top: 1px solid #f0f0f0;
+  }
+`;

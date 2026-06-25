@@ -30,7 +30,6 @@ export const GroceryListItem: React.FC<GroceryListItemProps> = ({
   item, index, onToggle, onEdit, onDelete, onShowNotes,
 }) => {
   const acquired = item.acquired;
-  console.log(`item: ${item.item} number is NaN: ${isNaN(Number(item.quantity))}`)
 
   return (
     <SwipeableItem onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)}>
