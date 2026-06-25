@@ -1,6 +1,6 @@
 import '../config/amplify'; // must be first
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { withAuthenticator, type WithAuthenticatorProps } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 
@@ -78,6 +78,23 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   // Resets whenever the store filter changes so an armed confirm
   // doesn't silently apply to a different set of items than the user saw.
   const [clearArmed, setClearArmed] = useState<boolean>(false);
+  const clearBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Disarm on tap-away. onBlur is unreliable on mobile (only fires when
+  // focus moves to another focusable element), so we attach a document-level
+  // pointerdown listener instead — it fires for any tap anywhere on the page.
+  // The listener is only active while the button is armed, and is cleaned up
+  // as soon as it disarms, so there's no overhead when nothing is pending.
+  useEffect(() => {
+    if (!clearArmed) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      if (!clearBtnRef.current?.contains(e.target as Node)) {
+        setClearArmed(false);
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [clearArmed]);
 
   const toggleAcquired = (id: string) => {
     updateItems(prev => prev.map(i => i.id === id ? { ...i, acquired: !i.acquired } : i));
@@ -198,10 +215,10 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
               <SectionLabelRow>
                 <SectionLabel>In Cart</SectionLabel>
                 <ClearAcquiredBtn
+                  ref={clearBtnRef}
                   type="button"
                   $armed={clearArmed}
                   onClick={handleClearAcquired}
-                  onBlur={() => setClearArmed(false)}
                   disabled={syncStatus !== 'idle'}
                   aria-label={clearArmed ? 'Tap again to confirm clearing acquired items' : 'Clear acquired items'}
                 >
