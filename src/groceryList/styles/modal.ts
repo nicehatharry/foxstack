@@ -43,5 +43,6 @@ export const ModalNoteText = styled.div`
   font-size: 15px;
   color: #1a1a1a;
   line-height: 1.6;
+  text-transform: none;
   white-space: pre-wrap;
 `;
