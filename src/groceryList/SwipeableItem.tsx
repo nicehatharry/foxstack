@@ -1,10 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import styled, { css, keyframes } from 'styled-components';
 
-// -----------------------------------------------------------------------
-// Styles — co-located because nothing outside this file uses them.
-// -----------------------------------------------------------------------
-
 /** Clip overflow so the sliding card doesn't show outside the row */
 const SwipeRow = styled.div`
   position: relative;
@@ -41,9 +37,7 @@ const RevealIcon = styled.span`
 const RevealLabel = styled.span`
   font-size: 10px;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: rgba(255,255,255,0.85);
-  font-family: 'Georgia', serif;
 `;
 
 const springBack = keyframes`

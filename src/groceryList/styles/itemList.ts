@@ -22,11 +22,9 @@ export const SectionLabel = styled.div`
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: #222;
   padding: 4px 10px;
   border-radius: 8px;
-  font-family: 'Georgia', serif;
 `;
 
 // Sits in the same row as SectionLabel. `$armed` is the inline
@@ -38,10 +36,8 @@ export const ClearAcquiredBtn = styled.button<{ $armed: boolean }>`
   background: ${p => p.$armed ? '#ff8a80' : 'none'};
   border: 1px solid ${p => p.$armed ? '#ff8a80' : '#ddd'};
   color: ${p => p.$armed ? '#fff' : '#999'};
-  font-family: 'Georgia', serif;
   font-size: 10px;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
   padding: 4px 9px;
   border-radius: 8px;
   cursor: pointer;
@@ -71,10 +67,8 @@ export const ClearAcquiredIcon = styled.span<{ $src: string }>`
 export const DeptHeader = styled.div`
   font-size: 10px;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: #aaa;
   margin: 12px 0 6px;
-  font-family: 'Georgia', serif;
 `;
 
 export const ItemCard = styled.div<{ $acquired: boolean; $animIndex: number }>`
@@ -83,6 +77,7 @@ export const ItemCard = styled.div<{ $acquired: boolean; $animIndex: number }>`
   padding: 14px 16px;
   display: flex;
   align-items: center;
+  letter-spacing: 0.12em;
   gap: 12px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   opacity: ${p => p.$acquired ? 0.6 : 1};
@@ -126,7 +121,6 @@ export const ItemBody = styled.div`
 export const ItemName = styled.div<{ $acquired: boolean }>`
   font-size: 15px;
   color: #1a1a1a;
-  font-family: 'Georgia', serif;
   position: relative;
   display: inline-block;
 
@@ -150,14 +144,12 @@ export const QtyBadge = styled.span`
   font-size: 12px;
   color: #555;
   flex-shrink: 0;
-  font-family: 'Georgia', serif;
 `;
 
 export const EmptyState = styled.div`
   text-align: center;
   padding: 60px 24px;
   color: #aaa;
-  font-family: 'Georgia', serif;
   font-style: italic;
   font-size: 15px;
   line-height: 1.6;
@@ -176,7 +168,6 @@ export const InfoIcon = styled.button`
   background: transparent;
   color: #aaa;
   font-size: 12px;
-  font-family: 'Georgia', serif;
   font-style: italic;
   font-weight: 700;
   line-height: 1;

@@ -35,15 +35,12 @@ export const ModalCard = styled.div`
 export const ModalItemName = styled.div`
   font-size: 11px;
   letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: #aaa;
-  font-family: 'Georgia', serif;
   margin-bottom: 10px;
 `;
 
 export const ModalNoteText = styled.div`
   font-size: 15px;
-  font-family: 'Georgia', serif;
   color: #1a1a1a;
   line-height: 1.6;
   white-space: pre-wrap;

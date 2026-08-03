@@ -70,7 +70,6 @@ export const SyncBar = styled.div<{ $status: SyncStatus }>`
   gap: 6px;
   font-size: 10px;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: ${p => {
     if (p.$status === 'error' || p.$status === 'conflict') return '#ff8a80';
     if (p.$status === 'saving') return '#c8f59e';

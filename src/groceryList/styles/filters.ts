@@ -23,7 +23,6 @@ export const FilterPill = styled.button<{ $active: boolean }>`
   background: ${p => p.$active ? '#c8f59e' : 'transparent'};
   color: ${p => p.$active ? '#1a1a1a' : '#aaa'};
   font-size: 12px;
-  font-family: 'Georgia', serif;
   letter-spacing: 0.04em;
   cursor: pointer;
   transition: all 0.18s ease;
@@ -52,7 +51,6 @@ export const SortBtn = styled.button<{ $active: boolean }>`
   background: ${p => p.$active ? '#1a1a1a' : 'transparent'};
   color: ${p => p.$active ? '#c8f59e' : '#888'};
   font-size: 11px;
-  font-family: 'Georgia', serif;
   letter-spacing: 0.04em;
   cursor: pointer;
   transition: all 0.15s;

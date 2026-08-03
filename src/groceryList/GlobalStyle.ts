@@ -8,7 +8,8 @@ export const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
     background: #f0ede8;
-    font-family: 'Georgia', 'Times New Roman', serif;
+    font-family: 'Roboto', sans-serif;
     overscroll-behavior: none;
+	  text-transform: uppercase;
   }
 `;

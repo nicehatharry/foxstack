@@ -6,7 +6,7 @@ export const AlertBanner = styled.div<{ $variant: 'conflict' | 'error' }>`
   border-bottom: 1px solid ${p => p.$variant === 'conflict' ? '#ffe0b2' : '#ffd5d5'};
   padding: 10px 16px;
   font-size: 12px;
-  font-family: 'Georgia', serif;
+  font-family: 'Roboto', sans-serif;
   color: ${p => p.$variant === 'conflict' ? '#e65100' : '#c62828'};
   display: flex;
   align-items: center;
@@ -18,9 +18,8 @@ export const AlertAction = styled.button`
   background: none;
   border: none;
   font-size: 11px;
-  font-family: 'Georgia', serif;
+  font-family: 'Roboto', sans-serif;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
   cursor: pointer;
   color: inherit;
   text-decoration: underline;

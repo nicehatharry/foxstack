@@ -44,7 +44,6 @@ export const SheetTitle = styled.h3`
   margin: 0 0 18px;
   font-size: 18px;
   font-weight: 400;
-  font-family: 'Georgia', serif;
   font-style: italic;
   color: #1a1a1a;
 `;
@@ -64,10 +63,8 @@ export const FieldLabel = styled.label`
   display: block;
   font-size: 10px;
   letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: #888;
   margin-bottom: 5px;
-  font-family: 'Georgia', serif;
 `;
 
 export const FieldInput = styled.input`
@@ -76,7 +73,6 @@ export const FieldInput = styled.input`
   border: 1.5px solid #e8e8e8;
   border-radius: 10px;
   font-size: 15px;
-  font-family: 'Georgia', serif;
   background: #fafafa;
   color: #1a1a1a;
   outline: none;
@@ -94,7 +90,6 @@ export const FieldTextarea = styled.textarea`
   border: 1.5px solid #e8e8e8;
   border-radius: 10px;
   font-size: 15px;
-  font-family: 'Georgia', serif;
   background: #fafafa;
   color: #1a1a1a;
   outline: none;
@@ -119,7 +114,6 @@ export const FieldSelect = styled.select`
   border: 1.5px solid #e8e8e8;
   border-radius: 10px;
   font-size: 15px;
-  font-family: 'Georgia', serif;
   background: #fafafa;
   color: #1a1a1a;
   outline: none;
@@ -145,7 +139,6 @@ export const StoreChip = styled.button<{ $selected: boolean }>`
   background: ${p => p.$selected ? '#1a1a1a' : '#fafafa'};
   color: ${p => p.$selected ? '#c8f59e' : '#555'};
   font-size: 13px;
-  font-family: 'Georgia', serif;
   cursor: pointer;
   transition: all 0.15s ease;
   -webkit-tap-highlight-color: transparent;
@@ -164,7 +157,6 @@ export const SubmitBtn = styled.button`
   border: none;
   border-radius: 12px;
   font-size: 15px;
-  font-family: 'Georgia', serif;
   letter-spacing: 0.06em;
   cursor: pointer;
   margin-top: 8px;
@@ -221,7 +213,6 @@ export const SuggestionDropdown = styled.ul<{ $visible: boolean }>`
 export const SuggestionItem = styled.li<{ $active: boolean }>`
   padding: 12px 14px;
   font-size: 15px;
-  font-family: 'Georgia', serif;
   color: #1a1a1a;
   background: ${p => p.$active ? '#f5f5f5' : 'transparent'};
   cursor: pointer;
