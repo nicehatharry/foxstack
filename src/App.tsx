@@ -1,5 +1,4 @@
 import { Homepage } from './homepage'
-import './baseStyles.css'
 import { Route, Switch } from "wouter"
 import GroceryList from './groceryList/GroceryList'
 
