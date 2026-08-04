@@ -1,7 +1,6 @@
 /**
  * Configures the Amplify library with the Cognito User Pool and Identity Pool.
- * This module must be imported ONCE at the very top of src/main.tsx,
- * before any other imports that touch auth or AWS services.
+ * This module must be imported at the very top of its consuming file.
  *
  * Usage:
  *   import './config/amplify';   // side-effect import — runs Amplify.configure()
