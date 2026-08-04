@@ -31,6 +31,10 @@ export function useGrocerySync() {
   // Track items in a ref so the debounced save closure always sees the latest value
   const itemsRef    = useRef<GroceryItem[]>([]);
   const isSavingRef = useRef(false);           // guard against overlapping PUTs
+  // True if items changed while a save was already in flight. Consumed by
+  // runSave's `finally` block to trigger an immediate follow-up save —
+  // otherwise that edit would never get persisted (see runSave below).
+  const dirtyRef = useRef(false);
 
   // -------------------------------------------------------------------------
   // S3 load
@@ -60,37 +64,54 @@ export function useGrocerySync() {
   // S3 save — debounced, ETag-guarded
   // -------------------------------------------------------------------------
 
+  const runSave = useCallback(async () => {
+    isSavingRef.current = true;
+    dirtyRef.current = false;
+    try {
+      const result = await saveList(itemsRef.current, etagRef.current);
+      if (result.conflict) {
+        // Another user wrote to S3 between our last read and this write.
+        // Reload the latest version and surface a conflict banner.
+        setSyncStatus('conflict');
+        setAlert('conflict');
+        await fetchList();
+      } else {
+        etagRef.current = result.etag;
+        // Don't flash "idle" if another save is coming.
+        if (!dirtyRef.current) setSyncStatus('idle');
+      }
+    } catch {
+      setSyncStatus('error');
+      setAlert('error');
+    } finally {
+      isSavingRef.current = false;
+      if (dirtyRef.current) {
+        // Something changed while this save was in flight; flush it now.
+        runSave();
+      }
+    }
+  }, [fetchList]);
+
   const persistItems = useCallback((nextItems: GroceryItem[]) => {
     // Always update the ref so the scheduled flush sees the latest list
     itemsRef.current = nextItems;
+    setSyncStatus('saving');
+
+    if (isSavingRef.current) {
+      // A save is already in flight for an older snapshot.
+      dirtyRef.current = true;
+      return;
+    }
 
     // Clear any pending flush and schedule a new one
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    setSyncStatus('saving');
-
-    saveTimerRef.current = setTimeout(async () => {
-      if (isSavingRef.current) return; // a save is already in flight
-      isSavingRef.current = true;
-      try {
-        const result = await saveList(itemsRef.current, etagRef.current);
-        if (result.conflict) {
-          // Another user wrote to S3 between our last read and this write.
-          // Reload the latest version and surface a conflict banner.
-          setSyncStatus('conflict');
-          setAlert('conflict');
-          await fetchList();
-        } else {
-          etagRef.current = result.etag;
-          setSyncStatus('idle');
-        }
-      } catch {
-        setSyncStatus('error');
-        setAlert('error');
-      } finally {
-        isSavingRef.current = false;
-      }
+    saveTimerRef.current = setTimeout(() => {
+      // The timer has now fired — it's no longer "pending", regardless of
+      // how long the save itself takes.
+      saveTimerRef.current = null;
+      runSave();
     }, SAVE_DEBOUNCE_MS);
-  }, [fetchList]);
+  }, [runSave]);
 
   // -------------------------------------------------------------------------
   // Polling — HEAD requests to detect remote changes cheaply
@@ -98,15 +119,15 @@ export function useGrocerySync() {
 
   useEffect(() => {
     pollTimerRef.current = setInterval(async () => {
-      // Skip poll while a save is in flight to avoid a false conflict signal
-      if (isSavingRef.current || saveTimerRef.current) return;
+      // Skip poll while saving is in flight to avoid a false conflict signal
+      if (isSavingRef.current || saveTimerRef.current || dirtyRef.current) return;
       try {
         const remoteEtag = await getRemoteEtag();
         if (remoteEtag && remoteEtag !== etagRef.current) {
           await fetchList();
         }
-      } catch {
-        // Silently ignore poll errors — the user isn't waiting on a poll
+      } catch(e) {
+        console.warn(`Etag polling errored with ${e}`)
       }
     }, POLL_INTERVAL_MS);
 
