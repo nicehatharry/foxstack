@@ -1,6 +1,9 @@
+import { lazy, Suspense } from 'react'
 import { Homepage } from './homepage'
 import { Route, Switch } from "wouter"
-import GroceryList from './groceryList/GroceryList'
+
+// GroceryList's module graph pulls in config/amplify → config/aws
+const GroceryList = lazy(() => import('./groceryList/GroceryList'))
 
 const App = () => (
   <>
@@ -9,7 +12,11 @@ const App = () => (
       the first matched route gets rendered
     */}
     <Switch>
-      <Route path="/grocery-list" component={GroceryList} />
+      <Route path="/grocery-list">
+        <Suspense fallback={null}>
+          <GroceryList />
+        </Suspense>
+      </Route>
 
       <Route path="/" component={Homepage} />
 
