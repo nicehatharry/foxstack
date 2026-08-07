@@ -52,7 +52,7 @@ src/
 │       ├── alert.ts               conflict/error banner
 │       ├── filters.ts             department pills + status/sort bar
 │       ├── itemList.ts            list container + item card pieces + empty state + SectionLabelRow/ClearAcquiredBtn (the "In Cart" boundary)
-│       ├── modal.ts               notes modal overlay + card (ModalOverlay, ModalCard, ModalItemName, ModalNoteText, ModalDismissBtn)
+│       ├── modal.ts               notes modal overlay + card (ModalOverlay, ModalCard, ModalItemName, ModalNoteText)
 │       ├── sheet.ts               bottom sheet + form fields + autocomplete dropdown
 │       │                          (AutocompleteWrapper, SuggestionDropdown, SuggestionItem)
 │       └── fab.ts                 floating "+" button
@@ -118,8 +118,8 @@ Optional free-text per item (brand, size, substitutions, etc.).
   modal (not the edit sheet). The note text is never shown inline in the row.
 - **Notes modal**: `notesItem` state in `GroceryList.tsx` holds the item
   being viewed, or `null` when closed. The modal lives in `styles/modal.ts`
-  (`ModalOverlay`, `ModalCard`, `ModalItemName`, `ModalNoteText`,
-  `ModalDismissBtn`). Tapping the overlay or the "Done" button closes it.
+  (`ModalOverlay`, `ModalCard`, `ModalItemName`, `ModalNoteText`).
+  Tapping the overlay is the only way to close the modal.
   `ModalCard` stops propagation so clicks on the card don't bubble to the
   overlay dismiss handler.
 - To edit a note, use swipe-left on the row as normal — the modal is
