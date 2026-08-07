@@ -10,13 +10,13 @@ const linkedinUrl = 'https://www.linkedin.com/in/brian-j-fox-818174a/'
 export const ConnectIcons = () => {
 	return (
 		<div className={connectIcons}>
-			<a href={email} target='#'>
+			<a href={email}>
 				<img src={mailIcon} alt='send Brian an email' />
 			</a>
-			<a href={githubUrl} target='#'>
+			<a href={githubUrl} target='_blank' rel='noopener noreferrer'>
 				<img src={githubIcon} alt="Brian's Github" />
 			</a>
-			<a href={linkedinUrl} target='#'>
+			<a href={linkedinUrl} target='_blank' rel='noopener noreferrer'>
 				<img src={linkedinIcon} alt="Brian's LinkedIn" />
 			</a>
 		</div>
