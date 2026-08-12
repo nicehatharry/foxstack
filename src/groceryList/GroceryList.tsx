@@ -11,11 +11,15 @@ import { useGrocerySync } from './useGrocerySync';
 import { useItemForm } from './useItemForm';
 import { GroceryListItem } from './GroceryListItem';
 
-import signOutIconSrc from '../assets/sign-out.svg';
+import settingsIconSrc from '../assets/settings.svg';
 import trashIconSrc from '../assets/trash-icon.svg';
 
 import { AppShell } from './styles/layout';
-import { TopBar, TopBarRow, AppTitle, SignOutBtn, SignOutIcon, SyncBar, SyncDot } from './styles/header';
+import {
+  TopBar, TopBarRow, AppTitle,
+  SettingsBtn, SettingsIcon, SettingsMenuWrapper, SettingsMenu, SettingsMenuItem,
+  SyncBar, SyncDot,
+} from './styles/header';
 import { AlertBanner, AlertAction } from './styles/alert';
 import { FilterBar, FilterPill, SortBar, SortBtn } from './styles/filters';
 import { ListArea, SectionLabelRow, SectionLabel, ClearAcquiredBtn, ClearAcquiredIcon, DeptHeader, EmptyState } from './styles/itemList';
@@ -97,7 +101,32 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   // "Tap again to confirm" state for the Clear Acquired button.
   const [clearArmed, setClearArmed] = useState<boolean>(false);
   const clearBtnRef = useRef<HTMLButtonElement>(null);
+  
+  // Settings menu open/closed + close-on-outside-tap (same pattern as the
+  // autocomplete dropdown and Clear Acquired arm state).
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [menuOpen]);
+
+  const handleManageItems = () => {
+    setMenuOpen(false);
+    // TODO: navigate to the manage-items page once it exists (next step)
+  };
+
+  const handleSignOutClick = () => {
+    setMenuOpen(false);
+    signOut?.();
+  };
   // ---------------------------------------------------------------------------
   // Autocomplete dropdown positioning
   //
@@ -199,9 +228,25 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
         <TopBar>
           <TopBarRow>
             <AppTitle>Grocery List</AppTitle>
-            <SignOutBtn onClick={signOut} aria-label="Sign out" title="Sign out">
-              <SignOutIcon $src={signOutIconSrc} aria-hidden="true" />
-            </SignOutBtn>
+            <SettingsMenuWrapper ref={menuRef}>
+              <SettingsBtn
+                onClick={() => setMenuOpen(prev => !prev)}
+                aria-label="Settings"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                title="Settings"
+              >
+                <SettingsIcon $src={settingsIconSrc} aria-hidden="true" />
+              </SettingsBtn>
+              <SettingsMenu role="menu" $visible={menuOpen}>
+                <SettingsMenuItem role="menuitem" type="button" onClick={handleManageItems}>
+                  Manage Items
+                </SettingsMenuItem>
+                <SettingsMenuItem role="menuitem" type="button" onClick={handleSignOutClick}>
+                  Sign Out
+                </SettingsMenuItem>
+              </SettingsMenu>
+            </SettingsMenuWrapper>
           </TopBarRow>
           <SyncBar $status={syncStatus}>
             <SyncDot $status={syncStatus} />

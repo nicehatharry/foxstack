@@ -25,7 +25,7 @@ export const TopBarRow = styled.div`
   gap: 12px;
 `;
 
-export const SignOutBtn = styled.button`
+export const SettingsBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -52,15 +52,68 @@ export const SignOutBtn = styled.button`
   }
 `;
 
-// Icon rendered via mask so it inherits SignOutBtn's `color` (theme-aware,
+// Icon rendered via mask so it inherits SettingsBtn's `color` (theme-aware,
 // including hover/focus) instead of being locked to the SVG's own fill.
-export const SignOutIcon = styled.span<{ $src: string }>`
+export const SettingsIcon = styled.span<{ $src: string }>`
   width: 16px;
   height: 16px;
   background-color: currentColor;
   flex-shrink: 0;
   -webkit-mask: url(${p => p.$src}) center / contain no-repeat;
   mask: url(${p => p.$src}) center / contain no-repeat;
+`;
+
+// Wraps SettingsBtn + SettingsMenu so the menu can be positioned absolutely
+// relative to the button, no fixed-position/measure hack needed here —
+// unlike the autocomplete dropdown, this isn't inside a clipping scroll
+// container.
+export const SettingsMenuWrapper = styled.div`
+  position: relative;
+  flex-shrink: 0;
+`;
+
+export const SettingsMenu = styled.div<{ $visible: boolean }>`
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
+  background: #f0ede8;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  z-index: 500;
+
+  opacity: ${p => (p.$visible ? 1 : 0)};
+  transform: translateY(${p => (p.$visible ? '0' : '-4px')});
+  pointer-events: ${p => (p.$visible ? 'auto' : 'none')};
+  transition: opacity 0.12s ease, transform 0.12s ease;
+`;
+
+export const SettingsMenuItem = styled.button`
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  color: #1a1a1a;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  &:not(:last-child) {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #888;
+    outline-offset: -2px;
+  }
 `;
 
 // Sync status indicator — lives in the TopBar
