@@ -3,6 +3,7 @@ import '../config/amplify'; // must be first
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { withAuthenticator, type WithAuthenticatorProps } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
+import { useLocation } from 'wouter';
 
 import { GlobalStyle } from './GlobalStyle';
 import { departments, storeOptions } from './GroceryList.constants';
@@ -37,7 +38,6 @@ import type { GroceryItem } from './GroceryList.types';
  * Renders one section's rows, inserting a DeptHeader
  * before the first item of each new department whenever isDeptSort is on.
  * Items are expected to already be department-sorted by filterAndSortItems
- * — this just detects the boundaries, it doesn't re-sort anything.
  */
 function renderSectionItems(
   sectionItems: GroceryItem[],
@@ -72,6 +72,8 @@ function renderSectionItems(
 }
 
 const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
+  const [, navigate] = useLocation();
+
   // S3-synced item list — see useGrocerySync.ts for load/save/poll/conflict logic
   const { items, syncStatus, alert, setAlert, fetchList, updateItems } = useGrocerySync();
 
@@ -101,9 +103,8 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   // "Tap again to confirm" state for the Clear Acquired button.
   const [clearArmed, setClearArmed] = useState<boolean>(false);
   const clearBtnRef = useRef<HTMLButtonElement>(null);
-  
-  // Settings menu open/closed + close-on-outside-tap (same pattern as the
-  // autocomplete dropdown and Clear Acquired arm state).
+
+  // Settings menu open/closed + close-on-outside-tap
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -120,13 +121,14 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
 
   const handleManageItems = () => {
     setMenuOpen(false);
-    // TODO: navigate to the manage-items page once it exists (next step)
+    navigate('/grocery-list/manage-items');
   };
 
   const handleSignOutClick = () => {
     setMenuOpen(false);
     signOut?.();
   };
+
   // ---------------------------------------------------------------------------
   // Autocomplete dropdown positioning
   //

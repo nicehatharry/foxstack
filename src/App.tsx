@@ -4,6 +4,7 @@ import { Route, Switch } from "wouter"
 
 // GroceryList's module graph pulls in config/amplify → config/aws
 const GroceryList = lazy(() => import('./groceryList/GroceryList'))
+const ManageItems = lazy(() => import('./groceryList/ManageItems'))
 
 const App = () => (
   <>
@@ -12,6 +13,12 @@ const App = () => (
       the first matched route gets rendered
     */}
     <Switch>
+      <Route path="/grocery-list/manage-items">
+        <Suspense fallback={null}>
+          <ManageItems />
+        </Suspense>
+      </Route>
+
       <Route path="/grocery-list">
         <Suspense fallback={null}>
           <GroceryList />

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { ChangeEvent, SubmitEvent, KeyboardEvent } from 'react';
 import type { ItemData, GroceryItem } from './GroceryList.types';
-import { loadHistory, saveHistory } from '../services/s3Storage';
 import type { ItemHistory } from '../services/s3Storage';
+import { getHistory, setHistory as persistHistory, historyKey } from './historyStore';
 
 const EMPTY_FORM: ItemData = { item: '', store: [], department: 'Produce', quantity: '1', acquired: false, notes: '' };
 
@@ -19,11 +19,10 @@ const EMPTY_FORM: ItemData = { item: '', store: [], department: 'Produce', quant
  *
  * AUTOCOMPLETE / HISTORY
  * ----------------------
- * History is loaded once from S3 on the first time the sheet opens and
- * cached in module-level state for the rest of the session (avoids a
- * network round-trip on every open). The cache is updated optimistically
- * on every submit so the dropdown reflects the latest entry immediately,
- * even before the S3 write completes.
+ * The history cache itself lives in historyStore.ts (shared with the
+ * Manage Items page — see that file's header comment). This hook loads
+ * it into local state the first time the sheet opens each session and
+ * updates it optimistically on every submit, same as before.
  *
  * Suggestions are keyed by lowercased item name. On focus or typing in
  * the item name field, matching names are shown in a dropdown. Selecting
@@ -34,27 +33,6 @@ const EMPTY_FORM: ItemData = { item: '', store: [], department: 'Produce', quant
  * "change form validation", "the sheet doesn't reset between items",
  * "change autocomplete matching behaviour".
  */
-
-// Module-level cache so history is only fetched once per session.
-let historyCache: ItemHistory | null = null;
-let historyLoadPromise: Promise<ItemHistory> | null = null;
-
-async function getHistory(): Promise<ItemHistory> {
-  if (historyCache !== null) return historyCache;
-  if (!historyLoadPromise) {
-    historyLoadPromise = loadHistory().then(h => {
-      historyCache = h;
-      return h;
-    });
-  }
-  return historyLoadPromise;
-}
-
-/** Derive the history key from an item name: lowercase + trimmed. */
-function historyKey(name: string): string {
-  return name.trim().toLowerCase();
-}
-
 export function useItemForm(
   updateItems: (updater: (prev: GroceryItem[]) => GroceryItem[]) => void
 ) {
@@ -63,7 +41,7 @@ export function useItemForm(
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Autocomplete state
-  const [history, setHistory] = useState<ItemHistory>({});
+  const [history, setHistoryState] = useState<ItemHistory>({});
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [activeSuggestion, setActiveSuggestion] = useState<number>(-1);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -74,7 +52,7 @@ export function useItemForm(
   // Load history once when the sheet first opens.
   useEffect(() => {
     if (!sheetOpen) return;
-    getHistory().then(h => setHistory(h));
+    getHistory().then(h => setHistoryState(h));
   }, [sheetOpen]);
 
   // Recompute filtered suggestions whenever the item name or history changes.
@@ -200,9 +178,10 @@ export function useItemForm(
   };
 
   /**
-   * Persist an item name → field mapping into history both locally and
-   * to S3. Called from handleSubmit for both add and edit paths.
-   * The S3 write is fire-and-forget — a failure here is non-critical.
+   * Persist an item name → field mapping into history, both in the shared
+   * session cache (historyStore.ts) and to S3. Called from handleSubmit
+   * for both add and edit paths. The S3 write is fire-and-forget — a
+   * failure here is non-critical.
    */
   const persistToHistory = useCallback((data: ItemData) => {
     if (!data.item.trim()) return;
@@ -215,16 +194,15 @@ export function useItemForm(
       notes:      data.notes ?? '',
     };
 
-    // Update local cache and state immediately (optimistic).
-    const updated = { ...historyCache, [k]: entry } as ItemHistory;
-    historyCache = updated;
-    setHistory(updated);
+    // Update local state immediately (optimistic).
+    const updated = { ...history, [k]: entry } as ItemHistory;
+    setHistoryState(updated);
 
-    // Persist to S3 in the background.
-    saveHistory(updated).catch(err => {
+    // Persist to the shared cache + S3 in the background.
+    persistHistory(updated).catch(err => {
       console.warn('[useItemForm] history save failed:', err);
     });
-  }, []);
+  }, [history]);
 
   const handleSubmit = (e: SubmitEvent) => {
     e.preventDefault();
