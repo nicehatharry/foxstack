@@ -1,167 +1,103 @@
 # GroceryList
 
-A single-page grocery list app (Amplify auth + S3-backed storage)
+Single-page grocery list app. Amplify auth + S3-backed storage (no DB).
 
-## Where to look for a given task
+## Task → file lookup
 
-| If you're asked to…                                        | Open this file                          |
-|--------------------------------------------------------------|------------------------------------------|
-| Add/remove a form field, change validation                  | `useItemForm.ts`                          |
-| Change item shape (new field on a grocery item)              | `s3Storage.ts` (`GroceryItem` interface) → `GroceryList.types.ts` (`ItemData`) → `useItemForm.ts` (`EMPTY_FORM`, `handleEdit`, `handleSubmit`, `persistToHistory`) → form JSX in `GroceryList.tsx` → `GroceryListItem.tsx` if the field needs a visual in the row |
-| Fix saving/sync/conflict/polling behavior                    | `useGrocerySync.ts`                       |
-| Change sort or filter logic                                  | `GroceryList.utils.ts`                    |
-| Add a department, change debounce/poll timing                | `GroceryList.constants.ts`                |
-| Fix swipe-to-edit/delete gesture behavior                    | `SwipeableItem.tsx` (fully self-contained) |
-| Change how a single list row looks/behaves                   | `GroceryListItem.tsx` + `styles/itemList.ts` |
-| Restyle the header, filter pills, sheet, or FAB               | the matching file under `styles/`         |
-| Change overall page layout / wire something new into the JSX | `GroceryList.tsx`                         |
-| Change "Clear acquired" button behavior (what gets deleted, confirm step) | `GroceryList.tsx` (`handleClearAcquired`, `clearArmed` state) + `styles/itemList.ts` (`ClearAcquiredBtn`) |
-| Change autocomplete suggestion matching or sorting           | `useItemForm.ts` (the `useEffect` that computes `suggestions`) |
-| Change autocomplete dropdown style                           | `styles/sheet.ts` (`SuggestionDropdown`, `SuggestionItem`, `AutocompleteWrapper`) |
-| Change which fields are stored in / restored from history    | `useItemForm.ts` (`persistToHistory`, `selectSuggestion`) + `s3Storage.ts` (`HistoryEntry`) |
-| Change the history S3 key or file format                     | `s3Storage.ts` (`historyKey`, `loadHistory`, `saveHistory`) |
+| Task | File |
+|---|---|
+| Add/remove form field, change validation | `useItemForm.ts` |
+| Change item shape (new field on GroceryItem) | `s3Storage.ts` (`GroceryItem`) → `GroceryList.types.ts` (`ItemData`) → `useItemForm.ts` (`EMPTY_FORM`, `handleEdit`, `handleSubmit`, `persistToHistory`) → form JSX in `GroceryList.tsx` → `GroceryListItem.tsx` if it needs a row visual |
+| Fix sync/save/conflict/polling | `useGrocerySync.ts` |
+| Sort/filter logic | `GroceryList.utils.ts` |
+| Add department, change debounce/poll timing | `GroceryList.constants.ts` |
+| Swipe-to-edit/delete gesture | `SwipeableItem.tsx` (self-contained) |
+| Single list row look/behavior | `GroceryListItem.tsx` + `styles/itemList.ts` |
+| Restyle header/pills/sheet/FAB | matching file under `styles/` |
+| Page layout / new JSX wiring | `GroceryList.tsx` |
+| Clear Acquired behavior | `GroceryList.tsx` (`handleClearAcquired`, `clearArmed`) + `styles/itemList.ts` (`ClearAcquiredBtn`) |
+| Autocomplete matching/sorting | `useItemForm.ts` (`suggestions` useEffect) |
+| Autocomplete dropdown style | `styles/sheet.ts` (`SuggestionDropdown`, `SuggestionItem`, `AutocompleteWrapper`) |
+| What history stores/restores | `useItemForm.ts` (`persistToHistory`, `selectSuggestion`) + `s3Storage.ts` (`HistoryEntry`) |
+| History S3 key/format | `s3Storage.ts` (`historyKey`, `loadHistory`, `saveHistory`) |
+| Header gear menu contents | `GroceryList.tsx` (`SettingsMenu`, `handleManageItems`, `handleSignOutClick`) + `styles/header.ts` |
+| "Save to history" checkbox | `useItemForm.ts` (`saveToHistory`, `handleSaveToHistoryToggle`) + `styles/sheet.ts` (`SaveHistoryRow`, `SaveHistoryCheckbox`) |
+| Edit/delete history entries directly | `ManageItems.tsx` + `useHistoryManager.ts` |
+| Shared history cache (sheet ⟷ Manage Items) | `historyStore.ts` |
+| Manage Items route/back destination | `App.tsx` (route) + `ManageItems.tsx` (`handleBack`) |
+| Manage Items palette | `styles/manageItemsLayout.ts`, `styles/manageItemsHeader.ts` |
+| History row look/behavior | `HistoryListItem.tsx` (reuses `styles/itemList.ts`) |
 
 ## File map
 
 ```
 src/
-├── assets/
-│   ├── various files             icons and images
+├── assets/            trash-icon.svg, settings.svg, return.png
 ├── config/
-│   ├── amplify.ts                configures the Amplify library with the Cognito User Pool and Identity Pool
-│   └── aws.ts                    all other AWS configuration
+│   ├── amplify.ts     Cognito User Pool / Identity Pool config
+│   └── aws.ts         other AWS config
 ├── groceryList/
-│   ├── index.ts                  barrel re-export, keeps external imports unchanged
-│   ├── GroceryList.tsx           main component: hook orchestration + JSX layout; autocomplete dropdown
-│   │                             positioning (measureDropdown / dropdownStyle); selector to render
-│   │                             department headers AND the "tap again to confirm" Clear Acquired
-│   │                             handler both live here
-│   ├── GroceryList.types.ts      canonical types (re-exports GroceryItem/SyncStatus from s3Storage.ts; defines ItemData for the form)
-│   ├── GroceryList.constants.ts  departments, store options, poll/debounce timing
-│   ├── GroceryList.utils.ts      pure filterAndSortItems()
-│   ├── useGrocerySync.ts         S3 load/save/poll/conflict — owns `items` state
-│   ├── useItemForm.ts            add/edit bottom sheet state + handlers; autocomplete/history logic
-│   ├── SwipeableItem.tsx         swipe gesture wrapper, own styles co-located
-│   ├── GroceryListItem.tsx       one list row (pending vs. acquired variants)
-│   ├── GlobalStyle.ts            body/box-sizing reset
-│   ├── animations.ts             shared keyframes (slideUp, fadeIn, strikeThrough)
+│   ├── index.ts               barrel re-export
+│   ├── GroceryList.tsx        main page: hooks + JSX; dropdown positioning;
+│   │                          dept headers; Clear Acquired; settings menu (open state,
+│   │                          outside-tap close, nav to Manage Items)
+│   ├── ManageItems.tsx        history editor page — same shape as GroceryList.tsx
+│   │                          minus store filter/dept-sort/show-all/dept headers/FAB;
+│   │                          distinct palette
+│   ├── historyStore.ts        session cache for history doc, shared by useItemForm +
+│   │                          useHistoryManager
+│   ├── useHistoryManager.ts   Manage Items' state: loads history, editEntry/deleteEntry
+│   │                          (rename = delete old key + insert new — key IS identity)
+│   ├── GroceryList.types.ts   ItemData; re-exports GroceryItem/SyncStatus
+│   ├── GroceryList.constants.ts  departments, storeOptions, poll/debounce timing
+│   ├── GroceryList.utils.ts   filterAndSortItems() (pure)
+│   ├── useGrocerySync.ts      owns `items`; only thing that calls setItems
+│   ├── useItemForm.ts         add/edit sheet state, autocomplete, saveToHistory checkbox
+│   ├── SwipeableItem.tsx      swipe gesture wrapper, styles co-located
+│   ├── GroceryListItem.tsx    list row (pending/acquired variants, has checkbox)
+│   ├── HistoryListItem.tsx    history row (no checkbox — no acquired concept)
+│   ├── GlobalStyle.ts         body/box-sizing reset
+│   ├── animations.ts          slideUp, fadeIn, strikeThrough keyframes
 │   └── styles/
 │       ├── layout.ts              AppShell
-│       ├── header.ts              TopBar, title, stats, sync indicator
+│       ├── manageItemsLayout.ts   ManageAppShell/ManageGlobalStyle (bg only differs)
+│       ├── header.ts              TopBar, SettingsBtn/Icon/Menu — shared by both pages
+│       ├── manageItemsHeader.ts   ManageTopBar (bg/text color only)
 │       ├── alert.ts               conflict/error banner
-│       ├── filters.ts             department pills + status/sort bar
-│       ├── itemList.ts            list container + item card pieces + empty state + SectionLabelRow/ClearAcquiredBtn (the "In Cart" boundary)
-│       ├── modal.ts               notes modal overlay + card (ModalOverlay, ModalCard, ModalItemName, ModalNoteText)
-│       ├── sheet.ts               bottom sheet + form fields + autocomplete dropdown
-│       │                          (AutocompleteWrapper, SuggestionDropdown, SuggestionItem)
-│       └── fab.ts                 floating "+" button
+│       ├── filters.ts             dept pills, status/sort bar
+│       ├── itemList.ts            card/row pieces — shared by both row types
+│       ├── modal.ts               notes modal — shared by both pages
+│       ├── sheet.ts               bottom sheet, form fields, autocomplete, SaveHistoryRow
+│       └── fab.ts                 "+" button (grocery list only)
 └── services/
-    └── s3storage.ts               S3 I/O lives here; the component never touches the AWS SDK directly;
-                                   includes loadHistory / saveHistory for the item name history file
+    └── s3Storage.ts        all S3 I/O; loadHistory/saveHistory for history.json
 ```
 
 ## Data flow
 
-`useGrocerySync` owns `items` and is the *only* thing allowed to call
-`setItems` — every mutation goes through its `updateItems(updater)`,
-which both applies the update and schedules a debounced S3 save.
-`GroceryList.tsx` and `useItemForm.ts` only ever call `updateItems`,
-never a raw setter.
-
 ```
-useGrocerySync ──items, updateItems──▶ GroceryList.tsx ──▶ GroceryListItem.tsx (rows)
-                                              │
-                                              └──▶ useItemForm (uses updateItems too)
+useGrocerySync ──items, updateItems──▶ GroceryList.tsx ──▶ GroceryListItem.tsx
+                                              └──▶ useItemForm (also uses updateItems)
+
+historyStore.ts (module-level cache) ──▶ useItemForm.ts (autocomplete, GroceryList.tsx)
+                                     └──▶ useHistoryManager.ts (ManageItems.tsx)
 ```
+Rule: only `useGrocerySync` calls `setItems`; everything else goes through `updateItems(updater)`.
 
-## Pending/acquired boundary ("In Cart" section)
+## Key invariants / gotchas
 
-Only rendered when `doShowAll` is on and there's at least one acquired
-item. Lives inline in `GroceryList.tsx` (not split into its own
-component file — it's one row of JSX plus a handler, and splitting it
-out would just add an indirection layer for no real reuse benefit).
+**History storage** (`grocery-lists/history.json`): flat map, lowercased name → `HistoryEntry {store, department, quantity, notes}`. **Key is the only identity — no `name` field.** Rename = delete old key + insert new key. No ETag locking; best-effort, last-write-wins. Acquired status never stored.
 
-- `SectionLabelRow` (in `styles/itemList.ts`) is the flex row holding
-  the "In Cart" label and the Clear button side by side.
-- **Clear Acquired** deletes via `updateItems`, going through the same
-  debounced S3 save as every other mutation — no special-casing.
-- It only deletes what's **currently visible** under the active store
-  filter (i.e. `acquired`, the already-filtered array), not every
-  acquired item in the underlying `items` list. If "Costco" is
-  selected, clearing only removes acquired Costco items.
-- **Confirm pattern**: first tap arms the button (`clearArmed = true`,
-  button turns red, label flips to "Tap again"); second tap actually
-  deletes. `clearArmed` resets on blur, on changing the store filter,
-  and on toggling "Show All" off — so an armed confirm never silently
-  carries over to a different set of items than the one the user was
-  looking at when they armed it.
-- This inline-arm/confirm approach (vs. a modal or `window.confirm`)
-  is the established pattern for destructive actions in this app —
-  reuse it if another one gets added later.
+**History cache** (`historyStore.ts`): fetched once per session, module-level. Shared by autocomplete and Manage Items — edits on either side are visible to the other without reload. Writes are optimistic (local update first) + fire-and-forget S3 save, `console.warn` on failure.
 
-## Notes field
+**Save-to-history checkbox**: `saveToHistory` lives in `useItemForm.ts` only, not on `ItemData`/`GroceryItem` (never persisted). Defaults `true`, reset `true` on every sheet open. Gates the `persistToHistory` call only — never affects `updateItems`/the grocery list itself.
 
-Optional free-text per item (brand, size, substitutions, etc.).
+**Autocomplete dropdown**: `position: fixed`, coords from input's `getBoundingClientRect()` (escapes Sheet's `overflow-y: auto`), remeasured on resize/scroll. Prefix matches sort before substring matches. Uses `onPointerDown` + `preventDefault()` (not `onClick`) so selection registers before input blur.
 
-- Stored as `notes?: string` on `GroceryItem` (in `s3Storage.ts`) — the `?`
-  makes it backward-compatible; items saved before this field existed simply
-  have no `notes` key and are treated as `''` throughout the UI.
-- `ItemData` in `GroceryList.types.ts` mirrors it as `notes?: string`.
-- `EMPTY_FORM` in `useItemForm.ts` initialises it to `''`; `handleEdit`
-  maps `item.notes ?? ''`; `handleSubmit` persists it on both add and edit.
-- The form renders a `FieldTextarea` (in `styles/sheet.ts`) as the last
-  field, full-width, below the store chips.
-- **In the list row**: when `item.notes` is non-empty a circle-ⓘ
-  (`InfoIcon` in `styles/itemList.ts`) appears immediately to the right
-  of the item name inside `ItemBody`. Tapping it opens a read-only notes
-  modal (not the edit sheet). The note text is never shown inline in the row.
-- **Notes modal**: `notesItem` state in `GroceryList.tsx` holds the item
-  being viewed, or `null` when closed. The modal lives in `styles/modal.ts`
-  (`ModalOverlay`, `ModalCard`, `ModalItemName`, `ModalNoteText`).
-  Tapping the overlay is the only way to close the modal.
-  `ModalCard` stops propagation so clicks on the card don't bubble to the
-  overlay dismiss handler.
-- To edit a note, use swipe-left on the row as normal — the modal is
-  intentionally read-only.
+**Clear Acquired**: tap-to-arm / tap-again-to-confirm (`clearArmed`), no modal/`window.confirm`. Only deletes currently-*filtered* acquired items, not all acquired items. Disarms on blur, store-filter change, or Show All toggle off. This is the established destructive-action pattern in this app — reuse it for new ones.
 
-## Item name autocomplete & history
+**Header settings menu**: gear icon → `SettingsMenu` (Manage Items nav via wouter, Sign Out via `signOut` prop). Closes on outside `pointerdown` (same pattern as autocomplete dropdown / Clear Acquired arm). Manage Items' back button reuses `SettingsBtn`/`SettingsIcon` with icon+handler swapped.
 
-When adding or editing an item, the name field shows a dropdown of previously
-used item names. Selecting a suggestion populates store, department, quantity,
-and notes from the last time an item with that name was saved. Acquired status
-is always reset to false (not stored in history).
+**Notes field**: `notes?: string`, optional for backward compat (pre-feature items have no key, treated as `''`). Circle-ⓘ icon opens a **read-only** modal; editing a note requires swipe-left → edit sheet. Manage Items has an identical parallel (`notesEntry` + same `styles/modal.ts` components).
 
-### Storage
-
-History is stored at `grocery-lists/history.json` in the same S3 bucket as
-the list. The document is a flat JSON object mapping a **lowercased item name**
-to a `HistoryEntry`:
-
-```jsonc
-{
-  "whole milk":  { "store": ["Aldi"], "department": "Dairy", "quantity": "1", "notes": "" },
-  "eggs":        { "store": ["Trader Joe's"], "department": "Dairy", "quantity": "2", "notes": "large" }
-}
-```
-
-History saves are best-effort (no ETag locking). A last-write-wins race between
-two concurrent users is harmless — both writes are valid history entries.
-
-### Session caching
-
-History is fetched once per browser session (module-level cache in
-`useItemForm.ts`) and updated optimistically on every submit, so the dropdown
-reflects a new item name immediately without waiting for the S3 round-trip.
-
-### Dropdown behaviour
-
-- Opens on focus of the item name field (showing all history) and filters
-  as the user types (prefix matches appear first, then substring matches).
-- On mobile the dropdown is `position: fixed`, with coordinates derived from
-  the input's `getBoundingClientRect()` — this escapes the Sheet's
-  `overflow-y: auto` clipping. Coordinates are re-measured on viewport resize
-  (virtual keyboard appear/disappear) and scroll.
-- Keyboard: arrow keys move the active suggestion, Enter selects, Escape/Tab
-  closes without selecting.
-- On mobile, `onPointerDown` with `preventDefault()` is used instead of
-  `onClick` to prevent the input from blurring before the selection registers.
+**Manage Items page** (`/grocery-list/manage-items`): only ever touches the history doc, never `items` — deleting/editing an entry does not affect items already on the list. No FAB (edit/delete only, no create). Palette differs via sibling styled-components (`manageItemsLayout.ts`/`manageItemsHeader.ts`), not variant props on shared components — only backgrounds are overridden, everything else (cards, swipe, form fields) is reused as-is. **Known gap**: renaming to a name that collides with an existing entry silently overwrites it, no warning.
