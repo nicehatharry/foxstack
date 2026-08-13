@@ -27,7 +27,7 @@ import { ListArea, SectionLabelRow, SectionLabel, ClearAcquiredBtn, ClearAcquire
 import {
   Overlay, Sheet, SheetHandle, SheetTitle,
   FieldGrid, FieldFull, FieldLabel, FieldInput, FieldTextarea, FieldSelect,
-  StoreChipGrid, StoreChip, SubmitBtn,
+  StoreChipGrid, StoreChip, SaveHistoryRow, SaveHistoryCheckbox, SubmitBtn,
   AutocompleteWrapper, SuggestionDropdown, SuggestionItem,
 } from './styles/sheet';
 import { ModalOverlay, ModalCard, ModalItemName, ModalNoteText } from './styles/modal';
@@ -81,6 +81,9 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
   const {
     formData, editingId, sheetOpen,
     openAdd, handleEdit, handleClose, handleInputChange, handleStoreToggle, handleSubmit, handleDelete,
+    // Save-to-history checkbox
+    saveToHistory,
+    handleSaveToHistoryToggle,
     // Autocomplete
     nameInputRef,
     suggestions,
@@ -436,6 +439,14 @@ const GroceryList: React.FC<WithAuthenticatorProps> = ({ signOut }) => {
               </FieldFull>
 
             </FieldGrid>
+
+            <SaveHistoryRow>
+              <SaveHistoryCheckbox
+                checked={saveToHistory}
+                onChange={handleSaveToHistoryToggle}
+              />
+              remember me
+            </SaveHistoryRow>
 
             <SubmitBtn type="submit">
               {editingId ? 'Save Changes' : 'Add Item'}

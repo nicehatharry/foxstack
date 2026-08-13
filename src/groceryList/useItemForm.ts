@@ -29,6 +29,16 @@ const EMPTY_FORM: ItemData = { item: '', store: [], department: 'Produce', quant
  * a suggestion populates all fields except `acquired` (always false for
  * new items) from the stored history entry.
  *
+ * SAVE TO HISTORY CHECKBOX
+ * -------------------------
+ * `saveToHistory` is a form-only control, deliberately NOT part of
+ * ItemData/GroceryItem — it decides whether persistToHistory() runs on
+ * submit, it isn't data about the item itself. Defaults to true and is
+ * reset to true every time the sheet opens (openAdd/handleEdit), so a
+ * previous item's unchecked state never silently carries over.
+ * Unchecking it only skips the history write; the item is still added
+ * to (or updated in) the grocery list as usual.
+ *
  * This is the file to touch for: "add a new field to the form",
  * "change form validation", "the sheet doesn't reset between items",
  * "change autocomplete matching behaviour".
@@ -39,6 +49,7 @@ export function useItemForm(
   const [itemData, setItemData] = useState<ItemData>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [saveToHistory, setSaveToHistory] = useState<boolean>(true);
 
   // Autocomplete state
   const [history, setHistoryState] = useState<ItemHistory>({});
@@ -75,6 +86,7 @@ export function useItemForm(
   const resetForm = () => {
     setItemData(EMPTY_FORM);
     setEditingId(null);
+    setSaveToHistory(true);
   };
 
   const closeDropdown = useCallback(() => {
@@ -87,6 +99,7 @@ export function useItemForm(
   const handleEdit = (item: GroceryItem) => {
     setItemData({ item: item.item, store: item.store, department: item.department, quantity: item.quantity, acquired: item.acquired, notes: item.notes ?? '' });
     setEditingId(item.id);
+    setSaveToHistory(true);
     setSheetOpen(true);
   };
 
@@ -105,6 +118,10 @@ export function useItemForm(
     if (name === 'item') {
       setDropdownOpen(true);
     }
+  };
+
+  const handleSaveToHistoryToggle = (e: ChangeEvent<HTMLInputElement>) => {
+    setSaveToHistory(e.target.checked);
   };
 
   const handleNameFocus = () => {
@@ -180,8 +197,8 @@ export function useItemForm(
   /**
    * Persist an item name → field mapping into history, both in the shared
    * session cache (historyStore.ts) and to S3. Called from handleSubmit
-   * for both add and edit paths. The S3 write is fire-and-forget — a
-   * failure here is non-critical.
+   * for both add and edit paths, only when saveToHistory is checked. The
+   * S3 write is fire-and-forget — a failure here is non-critical.
    */
   const persistToHistory = useCallback((data: ItemData) => {
     if (!data.item.trim()) return;
@@ -217,7 +234,11 @@ export function useItemForm(
       updateItems(prev => [...prev, newItem]);
     }
 
-    persistToHistory(itemData);
+    // Item always goes onto the grocery list above regardless of this
+    // checkbox — saveToHistory only controls the history write below.
+    if (saveToHistory) {
+      persistToHistory(itemData);
+    }
     handleClose();
   };
 
@@ -230,6 +251,9 @@ export function useItemForm(
     formData: itemData, editingId, sheetOpen,
     openAdd, handleEdit, handleClose,
     handleInputChange, handleStoreToggle, handleSubmit, handleDelete,
+    // Save-to-history checkbox
+    saveToHistory,
+    handleSaveToHistoryToggle,
     // Autocomplete
     nameInputRef,
     suggestions,

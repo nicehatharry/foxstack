@@ -149,6 +149,33 @@ export const StoreChip = styled.button<{ $selected: boolean }>`
   }
 `;
 
+/**
+ * "Save to history" toggle, sat directly above SubmitBtn. Deliberately
+ * low-key — small muted text, native checkbox — so it reads as a minor
+ * option rather than competing with the item name field or the submit
+ * action. Label wraps the checkbox so tapping the text also toggles it.
+ */
+export const SaveHistoryRow = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 2px 2px 14px;
+  font-size: 12px;
+  color: #999;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+`;
+
+export const SaveHistoryCheckbox = styled.input.attrs({ type: 'checkbox' })`
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: #1a1a1a;
+  cursor: pointer;
+  flex-shrink: 0;
+`;
+
 export const SubmitBtn = styled.button`
   width: 100%;
   padding: 15px;
