@@ -12,7 +12,7 @@ export const ManageAppShell = styled.div`
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  background: #dbe6ec; /* cool blue-grey — distinct from the list's warm cream (#f0ede8) */
+  background: #e3ada7; /* cool blue-grey — distinct from the list's warm cream (#f0ede8) */
   position: relative;
 `;
 

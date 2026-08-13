@@ -10,6 +10,7 @@ import styled from 'styled-components';
 export const ManageTopBar = styled.header`
   background: #16232b;
   color: #dce8ef;
+  margin-bottom: 14px;
   padding: 18px 20px 4px;
   position: sticky;
   top: 0;
