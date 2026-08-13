@@ -26,8 +26,7 @@ A single-page grocery list app (Amplify auth + S3-backed storage)
 ```
 src/
 ├── assets/
-│   ├── trash-icon.svg            icon for removing checked-off items button
-│   └── sign-out.svg              icon for sign out button
+│   ├── various files             icons and images
 ├── config/
 │   ├── amplify.ts                configures the Amplify library with the Cognito User Pool and Identity Pool
 │   └── aws.ts                    all other AWS configuration

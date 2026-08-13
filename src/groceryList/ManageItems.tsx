@@ -11,7 +11,7 @@ import { useHistoryManager } from './useHistoryManager';
 import type { HistoryListEntry } from './useHistoryManager';
 import { HistoryListItem } from './HistoryListItem';
 
-import returnIconSrc from '../assets/sign-out.svg';
+import returnIconSrc from '../assets/return.png';
 
 import { ManageAppShell, ManageGlobalStyle } from './styles/manageItemsLayout';
 import { ManageTopBar } from './styles/manageItemsHeader';
