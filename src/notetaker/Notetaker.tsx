@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNotes } from './useNotes';
 import { Sidebar } from './Sidebar';
 import { Editor } from './Editor';
-import { Shell } from './styles/layout';
+import { Shell, NotetakerGlobalStyle } from './styles/layout';
 import type { MobileView, NotePatch } from './Notetaker.types';
 
 const Notetaker: React.FC = () => {
@@ -42,23 +42,26 @@ const Notetaker: React.FC = () => {
   };
 
   return (
-    <Shell>
-      <Sidebar
-        notes={notes}
-        activeId={activeId}
-        hidden={mobileView !== 'list'}
-        onSelect={handleSelect}
-        onCreate={handleCreate}
-        onDelete={handleDelete}
-      />
-      <Editor
-        note={activeNote}
-        hidden={mobileView !== 'editor'}
-        onChange={handleChange}
-        onBack={handleBack}
-        onCreate={handleCreate}
-      />
-    </Shell>
+    <>
+      <NotetakerGlobalStyle />
+      <Shell>
+        <Sidebar
+          notes={notes}
+          activeId={activeId}
+          hidden={mobileView !== 'list'}
+          onSelect={handleSelect}
+          onCreate={handleCreate}
+          onDelete={handleDelete}
+        />
+        <Editor
+          note={activeNote}
+          hidden={mobileView !== 'editor'}
+          onChange={handleChange}
+          onBack={handleBack}
+          onCreate={handleCreate}
+        />
+      </Shell>
+    </>
   );
 };
 

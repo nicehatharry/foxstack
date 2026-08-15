@@ -13,9 +13,16 @@ export const SidebarAside = styled.aside<{ $hidden: boolean }>`
   border-right: 1px solid ${colors.stackLine};
 
   @media (max-width: ${layout.breakpointMobile}) {
+    position: fixed;
+    inset: 0;
     width: 100%;
     border-right: none;
-    display: ${p => (p.$hidden ? 'none' : 'flex')};
+    z-index: 10;
+    /* Stays mounted and slides in/out like a drawer*/
+    transform: translateX(${p => (p.$hidden ? '-100%' : '0')});
+    transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+    pointer-events: ${p => (p.$hidden ? 'none' : 'auto')};
   }
 `;
 
@@ -74,6 +81,7 @@ export const NoteList = styled.nav`
   overflow-y: auto;
   padding: 4px 10px 20px;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 `;
 
 export const NoteListEmpty = styled.p`
