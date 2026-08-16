@@ -82,25 +82,16 @@ export const TitleInput = styled.input`
   }
 `;
 
-export const BodyTextarea = styled.textarea`
-  display: block;
-  width: 100%;
+// CodeMirror grows to fit its content by default, so this just sets a floor height.
+export const CodemirrorBodyMount = styled.div`
   min-height: 50vh;
-  border: none;
-  outline: none;
-  resize: none;
-  background: transparent;
-  font-family: ${fonts.body};
-  font-size: 17px;
-  line-height: 1.75;
-  color: ${colors.inkSoft};
 
-  &::placeholder {
-    color: #b7b0a0;
+  .cm-editor {
+    height: 100%;
   }
-
-  @media (max-width: ${layout.breakpointMobile}) {
-    font-size: 16px;
+  .cm-scroller {
+    /* Let content grow with the page instead of scrolling internally. */
+    overflow: visible;
   }
 `;
 

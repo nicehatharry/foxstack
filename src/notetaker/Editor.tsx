@@ -1,7 +1,8 @@
 import type { Note, NotePatch } from './Notetaker.types';
+import { MarkdownBody } from './MarkdownBody';
 import {
   EditorPane, EditorTopbar, BackBtn,
-  EditorScroll, EditorInner, TitleInput, BodyTextarea,
+  EditorScroll, EditorInner, TitleInput,
   EditorEmpty, EditorEmptyInner,
 } from './styles/editor';
 
@@ -46,11 +47,14 @@ export const Editor: React.FC<EditorProps> = ({ note, hidden, onChange, onBack, 
             onChange={e => onChange({ title: e.target.value })}
             aria-label="Note title"
           />
-          <BodyTextarea
-            placeholder="Start writing…"
+
+          {/* Remounts on note switch via key, so CodeMirror's own undo
+              history doesn't bleed across notes. */}
+          <MarkdownBody
+            key={note.id}
             value={note.content}
-            onChange={e => onChange({ content: e.target.value })}
-            aria-label="Note content"
+            onChange={content => onChange({ content })}
+            placeholder="Start writing…"
           />
         </EditorInner>
       </EditorScroll>
