@@ -14,3 +14,13 @@ export const WORD_SIZE_TIERS: ReadonlyArray<{ maxLength: number; fontSize: numbe
   { maxLength: 17,       fontSize: 34 },
   { maxLength: Infinity, fontSize: 28 },
 ];
+
+/** Card flip duration (ms). styles/card.ts reads this so CSS and JS can't drift. */
+export const FLIP_DURATION_MS = 500;
+
+/**
+ * After any reveal/grade, further reveal/grade taps are ignored for this long.
+ * Stops a double-tap on "Show answer" from landing on "Got it"/"Missed it",
+ * and a double-tap on "Got it" from revealing the next card.
+ */
+export const ACTION_LOCKOUT_MS = 350;

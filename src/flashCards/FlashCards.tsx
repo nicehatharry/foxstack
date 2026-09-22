@@ -1,23 +1,59 @@
 import React from 'react';
 
 import { GlobalStyle } from './GlobalStyle';
-import { CardPrompt } from './CardPrompt';
+import { FlipCard } from './FlipCard';
+import { useStudySession } from './useStudySession';
 import { sampleDeck, sampleDeckName } from './sampleDeck';
 
 import { AppShell } from './styles/layout';
 import { TopBar, TopBarRow, AppTitle, Progress } from './styles/header';
-import { Actions, ShowAnswerBtn, EmptyState } from './styles/actions';
+import { Actions, PrimaryBtn, RevealBtn, EmptyState } from './styles/actions';
+import { SummaryState, SummaryTitle, SummaryText } from './styles/summary';
 
 const FlashCards: React.FC = () => {
-  // Placeholder source — swap for a useStudySession() hook once decks are
-  // loaded from S3 (see context-FlashCards.md).
-  const deck = sampleDeck;
-  const total = deck.length;
-  const position = 1;
-  const card = deck[position - 1];
+  // Placeholder deck source — swap for an S3-backed loader (see context-FlashCards.md).
+  const {
+    currentCard, position, total, isFlipped, isComplete,
+    gotCount, missedCount, reveal, grade, restart,
+  } = useStudySession(sampleDeck);
 
-  const handleShowAnswer = () => {
-    // TODO(next task): flip to the answer side.
+  const renderBody = () => {
+    if (currentCard) {
+      return (
+        <>
+          <FlipCard
+            key={currentCard.id}
+            card={currentCard}
+            position={position}
+            total={total}
+            isFlipped={isFlipped}
+            onReveal={reveal}
+            onGrade={grade}
+          />
+          <Actions>
+            <RevealBtn type="button" $flipped={isFlipped} onClick={reveal}>
+              Show answer
+            </RevealBtn>
+          </Actions>
+        </>
+      );
+    }
+
+    if (isComplete) {
+      return (
+        <>
+          <SummaryState>
+            <SummaryTitle>Deck complete</SummaryTitle>
+            <SummaryText>{gotCount} got it, {missedCount} missed it</SummaryText>
+          </SummaryState>
+          <Actions>
+            <PrimaryBtn type="button" onClick={restart}>Study again</PrimaryBtn>
+          </Actions>
+        </>
+      );
+    }
+
+    return <EmptyState>No cards in this deck yet.</EmptyState>;
   };
 
   return (
@@ -27,22 +63,10 @@ const FlashCards: React.FC = () => {
         <TopBar>
           <TopBarRow>
             <AppTitle>{sampleDeckName}</AppTitle>
-            {card && <Progress>{position} of {total}</Progress>}
+            {currentCard && <Progress>{position} of {total}</Progress>}
           </TopBarRow>
         </TopBar>
-
-        {card ? (
-          <>
-            <CardPrompt card={card} position={position} total={total} />
-            <Actions>
-              <ShowAnswerBtn type="button" onClick={handleShowAnswer}>
-                Show answer
-              </ShowAnswerBtn>
-            </Actions>
-          </>
-        ) : (
-          <EmptyState>No cards in this deck yet.</EmptyState>
-        )}
+        {renderBody()}
       </AppShell>
     </>
   );

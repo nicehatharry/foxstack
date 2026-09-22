@@ -18,7 +18,20 @@ export const colors = {
 
   // Translucent ivory panel behind the word. ~88% opaque: the bands still
   // tint through it, but ink text on it stays > 12:1 over any band.
-  ivoryOverlay:  'rgba(251, 247, 234, 0.55)',
+  ivoryOverlay:  'rgba(251, 247, 234, 0.88)',
+} as const;
+
+/** Soft answer-side backgrounds. Ink text on all of these is > 10:1. */
+export const answerTones = {
+  masculine: '#CFE0F5', // blue
+  feminine:  '#F3CFCB', // red
+  neuter:    '#D2E7CF', // green
+  other:     '#F8DFC0', // orange (non-nouns)
+} as const;
+
+export const answerText = {
+  muted:   '#3D4452',
+  outline: 'rgba(18, 21, 28, 0.35)',
 } as const;
 
 export const fontFamily =

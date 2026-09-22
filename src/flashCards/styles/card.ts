@@ -1,5 +1,8 @@
 import styled, { css } from 'styled-components';
-import { colors, layout } from './tokens';
+import { cardIn } from '../animations';
+import { FLIP_DURATION_MS } from '../FlashCards.constants';
+import type { AnswerTone } from '../FlashCards.types';
+import { answerText, answerTones, colors, layout } from './tokens';
 
 /**
  * Wrapper that owns the card's flex sizing and the "more cards below" hint.
@@ -26,19 +29,60 @@ export const CardStack = styled.div<{ $hasMore: boolean }>`
 `;
 
 /**
- * Three equal horizontal bands (black / red / gold) via hard-stop gradient.
- * The word panel is centred on the card; the pill is pulled out of flow
- * (absolute) so it doesn't offset that centring.
+ * Flip scene: gives the child a 3D viewpoint and is the tap target. The
+ * entrance animation lives here so a remounted card (new `key`) slides in
+ * already un-flipped — no flip-back animation that could leak the next answer.
  */
-export const Card = styled.article`
-  position: relative; /* sits above the ::before layer */
+export const Scene = styled.div`
+  position: relative; /* paints above CardStack::before */
   display: flex;
   flex: 1;
+  perspective: 1200px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  animation: ${cardIn} 240ms ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`;
+
+export const Flipper = styled.div<{ $flipped: boolean }>`
+  position: relative;
+  flex: 1;
+  transform-style: preserve-3d;
+  transform: rotateY(${({ $flipped }) => ($flipped ? 180 : 0)}deg);
+  transition: transform ${FLIP_DURATION_MS}ms cubic-bezier(0.3, 0.7, 0.2, 1);
+  will-change: transform;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`;
+
+/**
+ * One side of the card. Both faces are stacked at inset 0 with
+ * backface-visibility hidden; the Flipper's rotation decides which shows.
+ * The pill is absolute (top-left) so it doesn't offset the centred content.
+ */
+const Face = styled.article`
+  position: absolute;
+  inset: 0;
+  display: flex;
   flex-direction: column;
   justify-content: center;
   overflow: hidden;
   padding: ${layout.cardPadding}px;
   border-radius: ${layout.cardRadius}px;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+`;
+
+/** Prompt side: three equal horizontal bands (black / red / gold), hard-stop gradient. */
+export const CardFront = styled(Face)`
   color: ${colors.cardText};
   background: linear-gradient(
     to bottom,
@@ -48,7 +92,21 @@ export const Card = styled.article`
   );
 `;
 
-/** Category marker — it encodes information (part of speech), so it's a pill. Sits on the black band. */
+/**
+ * Answer side: soft tone by noun gender (or orange for non-nouns).
+ *
+ * `visibility` keeps this face — and the grade buttons on it — untappable and
+ * out of the tab order until the card is flipped. It flips to visible in the
+ * same frame the rotation starts, so the animation is unaffected.
+ */
+export const CardBack = styled(Face)<{ $tone: AnswerTone; $flipped: boolean }>`
+  transform: rotateY(180deg);
+  color: ${colors.ink};
+  background: ${({ $tone }) => answerTones[$tone]};
+  visibility: ${({ $flipped }) => ($flipped ? 'visible' : 'hidden')};
+`;
+
+/** Category marker — it encodes information (part of speech), so it's a pill. */
 export const PosTag = styled.span`
   position: absolute;
   top: ${layout.cardPadding}px;
@@ -62,18 +120,24 @@ export const PosTag = styled.span`
   color: ${colors.cardText};
 `;
 
+/** Same pill, inked for the light answer side. */
+export const AnswerPosTag = styled(PosTag)`
+  border-color: ${answerText.outline};
+  color: ${colors.ink};
+`;
+
 /**
- * Translucent ivory band behind the word. Bleeds edge-to-edge (negative
- * margin cancels the card padding) while its own padding restores the text
- * width, so WORD_SIZE_TIERS (tuned for ~313px) still holds. The blur softens
- * the band edges behind the text.
+ * Translucent ivory band behind the prompt word. Bleeds edge-to-edge
+ * (negative margin cancels the card padding) while its own padding restores
+ * the text width, so WORD_SIZE_TIERS (tuned for ~313px) still holds.
+ *
+ * No backdrop-filter on purpose: Safari mishandles it inside preserve-3d
+ * (flip) contexts. The 88% opacity carries legibility on its own.
  */
 export const WordPanel = styled.div`
   margin: -1px;
   padding: 48px 0px;
   background: ${colors.ivoryOverlay};
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
   border-radius: 25px;
 `;
 
@@ -89,6 +153,41 @@ export const Word = styled.h2<{ $fontSize: number }>`
   letter-spacing: -0.01em;
   text-align: center;
   color: ${colors.ink};
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+`;
+
+/**
+ * Fills the space between the pill (top) and the grade buttons (bottom) and
+ * centres the German word + translation in it. Top padding clears the
+ * absolutely positioned pill.
+ */
+export const AnswerBody = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 0 16px;
+  text-align: center;
+`;
+
+/** The prompt word, small, as a reminder of what was asked (with article for nouns). */
+export const AnswerGerman = styled.p`
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: ${answerText.muted};
+`;
+
+export const Translation = styled.h2<{ $fontSize: number }>`
+  margin: 0;
+  font-size: ${({ $fontSize }) => $fontSize}px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
   -webkit-hyphens: auto;
   hyphens: auto;
   overflow-wrap: break-word;

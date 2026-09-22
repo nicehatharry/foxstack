@@ -1,4 +1,5 @@
 import { WORD_SIZE_TIERS } from './FlashCards.constants';
+import type { AnswerTone, Article, Flashcard } from './FlashCards.types';
 
 /**
  * Picks a font size (px) for the prompt word so it fits without mid-word
@@ -15,4 +16,16 @@ export function getWordFontSize(word: string): number {
   const effectiveLength = Math.max(longestToken, Math.ceil(text.length / 2));
   const tier = WORD_SIZE_TIERS.find(t => effectiveLength <= t.maxLength);
   return (tier ?? WORD_SIZE_TIERS[WORD_SIZE_TIERS.length - 1]).fontSize;
+}
+
+const ARTICLE_TONE: Record<Article, AnswerTone> = {
+  der: 'masculine',
+  die: 'feminine',
+  das: 'neuter',
+};
+
+/** Answer-side background: noun gender if known, otherwise 'other'. Pure. */
+export function getAnswerTone(card: Flashcard): AnswerTone {
+  if (card.partOfSpeech !== 'noun' || !card.article) return 'other';
+  return ARTICLE_TONE[card.article];
 }

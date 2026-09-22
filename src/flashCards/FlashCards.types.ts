@@ -16,3 +16,9 @@ export interface Flashcard {
   partOfSpeech: PartOfSpeech;
   article?: Article; // nouns only
 }
+
+/** How the learner rated a card after seeing the answer. */
+export type Grade = 'got' | 'missed';
+
+/** Background tone of the answer side: noun gender, or 'other' for non-nouns. */
+export type AnswerTone = 'masculine' | 'feminine' | 'neuter' | 'other';
