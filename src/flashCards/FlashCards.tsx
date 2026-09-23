@@ -14,17 +14,18 @@ import { SummaryState, SummaryTitle, SummaryText } from './styles/summary';
 const FlashCards: React.FC = () => {
   // Placeholder word bank + progress — swap for an S3-backed loader
   // (words.json + progress.json; see context-FlashCards.md).
+  const wordBank = sampleDeck;
   const {
-    currentCard, position, total, isFlipped,
+    currentCard, position, total, isFlipped, isComplete,
     gotCount, missedCount, reveal, grade, restart,
-  } = useStudySession(sampleDeck, sampleProgress);
+  } = useStudySession(wordBank, sampleProgress);
 
   const renderBody = () => {
     if (currentCard) {
       return (
         <>
           <FlipCard
-            key={currentCard.id}
+            key={`${currentCard.id}-${position}`}
             card={currentCard}
             position={position}
             total={total}
@@ -42,7 +43,7 @@ const FlashCards: React.FC = () => {
     }
 
     // Session queue was non-empty and has been worked through.
-    if (total > 0) {
+    if (isComplete) {
       return (
         <>
           <SummaryState>
@@ -56,7 +57,7 @@ const FlashCards: React.FC = () => {
       );
     }
 
-    if (sampleDeck.length === 0) {
+    if (wordBank.length === 0) {
       return <EmptyState>No cards in this deck yet.</EmptyState>;
     }
 

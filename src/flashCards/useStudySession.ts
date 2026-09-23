@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { ACTION_LOCKOUT_MS, MISSED_REQUEUE_GAP, SESSION_CARD_CAP } from './FlashCards.constants';
-import { buildSessionQueue, scheduleNext, updateSuccessRate } from './srs';
+import { applyGrade, buildSessionQueue } from './srs';
 import type { Flashcard, Grade, ProgressDocument } from './FlashCards.types';
 
 export interface StudySession {
@@ -17,12 +17,16 @@ export interface StudySession {
   reveal: () => void;
   /** Record a grade and advance. Only valid while the answer is showing. */
   grade: (g: Grade) => void;
-  /** Replays this session's queue again for extra practice. See gotchas in context-FlashCards.md. */
+  /**
+   * Replays this session's initial queue for extra practice. Pure practice:
+   * `progressDraft` is not affected (see applyGrade — only a card's first grade
+   * per session schedules it).
+   */
   restart: () => void;
   /**
-   * Word progress + rolling success rate, updated after every grade. This is
-   * what a caller would write back to `progress.json` in S3 — this hook only
-   * holds it in memory.
+   * Word progress + rolling success rate, updated on each card's first grade
+   * of the session. This is what a caller would write back to `progress.json`
+   * in S3 — this hook only holds it in memory.
    */
   progressDraft: ProgressDocument;
 }
@@ -35,8 +39,9 @@ export interface StudySession {
  * will plug in.
  */
 export function useStudySession(wordBank: Flashcard[], initialProgress: ProgressDocument): StudySession {
-  const sessionId = useRef(`s_${Date.now()}`).current;
-  const startedAt = useRef(new Date()).current;
+  // Lazy initialisers: created once, not re-evaluated on every render.
+  const [sessionId] = useState(() => `s_${Date.now()}`);
+  const [startedAt] = useState(() => new Date());
 
   const [initialQueue] = useState<Flashcard[]>(() => buildSessionQueue(
     wordBank, initialProgress.words, initialProgress.meta, startedAt, sessionId, SESSION_CARD_CAP,
@@ -53,24 +58,26 @@ export function useStudySession(wordBank: Flashcard[], initialProgress: Progress
   const currentCard = liveQueue[index] ?? null;
   const isComplete = total > 0 && index >= total;
 
-  const isLockedOut = () => Date.now() - lastActionAt.current < ACTION_LOCKOUT_MS;
+  // Stable identity (reads only a ref), so it can sit in hook deps honestly.
+  const isLockedOut = useCallback(
+    () => Date.now() - lastActionAt.current < ACTION_LOCKOUT_MS,
+    [],
+  );
 
   const reveal = useCallback(() => {
     if (!currentCard || isFlipped || isLockedOut()) return;
     lastActionAt.current = Date.now();
     setIsFlipped(true);
-  }, [currentCard, isFlipped]);
+  }, [currentCard, isFlipped, isLockedOut]);
 
   const grade = useCallback((g: Grade) => {
     if (!currentCard || !isFlipped || isLockedOut()) return;
     lastActionAt.current = Date.now();
 
+    // Scheduling is decided inside the updater from `prev`, so it can never
+    // read a stale closure. `now` is captured outside to keep the updater pure.
     const now = new Date();
-    const nextWordProgress = scheduleNext(progressDraft.words[currentCard.id], g, now, sessionId);
-    setProgressDraft(prev => ({
-      meta: updateSuccessRate(prev.meta, g),
-      words: { ...prev.words, [currentCard.id]: nextWordProgress },
-    }));
+    setProgressDraft(prev => applyGrade(prev, currentCard.id, g, now, sessionId));
 
     if (g === 'got') setGotCount(c => c + 1);
     else setMissedCount(c => c + 1);
@@ -87,7 +94,7 @@ export function useStudySession(wordBank: Flashcard[], initialProgress: Progress
 
     setIndex(i => i + 1);
     setIsFlipped(false);
-  }, [currentCard, isFlipped, index, progressDraft, sessionId]);
+  }, [currentCard, isFlipped, index, sessionId, isLockedOut]);
 
   const restart = useCallback(() => {
     lastActionAt.current = Date.now();
@@ -96,8 +103,8 @@ export function useStudySession(wordBank: Flashcard[], initialProgress: Progress
     setIsFlipped(false);
     setGotCount(0);
     setMissedCount(0);
-    // progressDraft is intentionally left alone — schedule updates already
-    // earned this session shouldn't be discarded by replaying for practice.
+    // progressDraft is intentionally left alone: replayed cards already carry
+    // this session's id, so applyGrade ignores their grades.
   }, [initialQueue]);
 
   return {

@@ -18,8 +18,11 @@ interface FlipCardProps {
  * Two-sided card. Tapping anywhere on it reveals the answer (one-way); the
  * Missed it / Got it buttons live on the answer face.
  *
- * Render with `key={card.id}` so advancing remounts it un-flipped instead of
- * animating back — otherwise the next card's answer would flash mid-flip.
+ * Render with a key that changes on EVERY advance (card id + queue position),
+ * so advancing remounts it un-flipped instead of animating back — otherwise
+ * the next card's answer would flash mid-flip. A bare `key={card.id}` is not
+ * enough: a missed card can be the very next card (last card in the queue,
+ * or a one-card queue), giving the same id twice in a row and no remount.
  *
  * The tap is a pointer convenience; the page's "Show answer" button is the
  * keyboard/screen-reader path. The hidden face is kept out of the tab order

@@ -7,7 +7,7 @@ import {
   SUCCESS_RATE_SMOOTHING,
 } from './FlashCards.constants';
 import type {
-  Flashcard, Grade, LeitnerBox, ProgressMap, SessionMeta, WordProgress,
+  Flashcard, Grade, LeitnerBox, ProgressDocument, ProgressMap, SessionMeta, WordProgress,
 } from './FlashCards.types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -61,6 +61,33 @@ export function updateSuccessRate(meta: SessionMeta, grade: Grade): SessionMeta 
     : meta.successRate * (1 - SUCCESS_RATE_SMOOTHING) + value * SUCCESS_RATE_SMOOTHING;
 
   return { successRate, totalReviews: meta.totalReviews + 1 };
+}
+
+/**
+ * Folds one grade into the progress document. Pure.
+ *
+ * Only a card's FIRST grade in a session counts. `lastSessionId` is the marker:
+ * once it equals `sessionId`, later grades of that card in the same session
+ * (the in-session requeue after a miss, or a "Study again" replay) return the
+ * document untouched. Without this a card missed and then recalled on its
+ * requeue jumped to box 2 — a longer interval than a card recalled first try —
+ * and replays advanced boxes twice in one day. It also keeps retries out of
+ * `successRate`/`totalReviews`, which are meant to measure first-exposure recall.
+ */
+export function applyGrade(
+  doc: ProgressDocument,
+  cardId: string,
+  grade: Grade,
+  now: Date,
+  sessionId: string,
+): ProgressDocument {
+  const existing = doc.words[cardId];
+  if (existing?.lastSessionId === sessionId) return doc;
+
+  return {
+    meta: updateSuccessRate(doc.meta, grade),
+    words: { ...doc.words, [cardId]: scheduleNext(existing, grade, now, sessionId) },
+  };
 }
 
 /** True if a word is eligible to appear in *this* session. */
