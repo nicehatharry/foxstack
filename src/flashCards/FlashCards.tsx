@@ -4,6 +4,7 @@ import { GlobalStyle } from './GlobalStyle';
 import { FlipCard } from './FlipCard';
 import { useStudySession } from './useStudySession';
 import { sampleDeck, sampleDeckName } from './sampleDeck';
+import { sampleProgress } from './sampleProgress';
 
 import { AppShell } from './styles/layout';
 import { TopBar, TopBarRow, AppTitle, Progress } from './styles/header';
@@ -11,11 +12,12 @@ import { Actions, PrimaryBtn, RevealBtn, EmptyState } from './styles/actions';
 import { SummaryState, SummaryTitle, SummaryText } from './styles/summary';
 
 const FlashCards: React.FC = () => {
-  // Placeholder deck source — swap for an S3-backed loader (see context-FlashCards.md).
+  // Placeholder word bank + progress — swap for an S3-backed loader
+  // (words.json + progress.json; see context-FlashCards.md).
   const {
-    currentCard, position, total, isFlipped, isComplete,
+    currentCard, position, total, isFlipped,
     gotCount, missedCount, reveal, grade, restart,
-  } = useStudySession(sampleDeck);
+  } = useStudySession(sampleDeck, sampleProgress);
 
   const renderBody = () => {
     if (currentCard) {
@@ -39,11 +41,12 @@ const FlashCards: React.FC = () => {
       );
     }
 
-    if (isComplete) {
+    // Session queue was non-empty and has been worked through.
+    if (total > 0) {
       return (
         <>
           <SummaryState>
-            <SummaryTitle>Deck complete</SummaryTitle>
+            <SummaryTitle>Session complete</SummaryTitle>
             <SummaryText>{gotCount} got it, {missedCount} missed it</SummaryText>
           </SummaryState>
           <Actions>
@@ -53,7 +56,12 @@ const FlashCards: React.FC = () => {
       );
     }
 
-    return <EmptyState>No cards in this deck yet.</EmptyState>;
+    if (sampleDeck.length === 0) {
+      return <EmptyState>No cards in this deck yet.</EmptyState>;
+    }
+
+    // Word bank has cards, but nothing is due and no new words are queued.
+    return <EmptyState>Nothing due right now — check back later.</EmptyState>;
   };
 
   return (
