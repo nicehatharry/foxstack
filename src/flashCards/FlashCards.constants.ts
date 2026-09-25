@@ -28,9 +28,11 @@ export const FLIP_DURATION_MS = 500;
 export const ACTION_LOCKOUT_MS = 350;
 
 /**
- * Leitner box → days until due again, once a word has been graded at least
- * once. Box 1 satisfies the "minimum: next session" requirement; box 5 caps
- * at the "maximum: one month" requirement.
+ * Leitner box → calendar days until due again, once a word has been graded at
+ * least once. "Due" means local midnight that many days after the grading day
+ * (see dueDateFor in srs.ts), not N × 24 h after the grading instant. Box 1
+ * satisfies the "minimum: next session" requirement; box 5 caps at the
+ * "maximum: one month" requirement.
  */
 export const LEITNER_INTERVALS_DAYS: Record<LeitnerBox, number> = {
   1: 1,

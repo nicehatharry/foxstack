@@ -10,10 +10,19 @@ import type {
   Flashcard, Grade, LeitnerBox, ProgressDocument, ProgressMap, SessionMeta, WordProgress,
 } from './FlashCards.types';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function addDays(date: Date, days: number): Date {
-  return new Date(date.getTime() + days * DAY_MS);
+/**
+ * When a word graded at `from` becomes due again: local midnight, `days`
+ * calendar days after `from`'s local day. So an interval of N means "the
+ * morning N days from today", regardless of what time of day it was graded —
+ * a card graded 08:05 yesterday is due at 08:00 today.
+ *
+ * Uses calendar arithmetic (`new Date(y, m, d + n)`), not `+ n * 24h`, so DST
+ * transitions can't push the result to 23:00 or 01:00. The result is an
+ * absolute instant (stored as ISO/UTC); "local" is the device's zone at grading
+ * time. Pure.
+ */
+export function dueDateFor(from: Date, days: number): Date {
+  return new Date(from.getFullYear(), from.getMonth(), from.getDate() + days);
 }
 
 /**
@@ -25,6 +34,7 @@ function addDays(date: Date, days: number): Date {
  * - Got it: moves up one box (capped at MAX_LEITNER_BOX). A word with no
  *   prior record (first time seeing it) starts at box 1 either way, which
  *   satisfies the "minimum: next session" rule for a first-time recall.
+ * - `dueAt` is local midnight of the due day — see dueDateFor().
  */
 export function scheduleNext(
   existing: WordProgress | undefined,
@@ -43,7 +53,7 @@ export function scheduleNext(
   return {
     box,
     lapses: grade === 'missed' ? lapses + 1 : lapses,
-    dueAt: addDays(now, LEITNER_INTERVALS_DAYS[box]).toISOString(),
+    dueAt: dueDateFor(now, LEITNER_INTERVALS_DAYS[box]).toISOString(),
     lastSessionId: sessionId,
   };
 }

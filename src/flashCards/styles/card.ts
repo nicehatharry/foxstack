@@ -127,9 +127,10 @@ export const AnswerPosTag = styled(PosTag)`
 `;
 
 /**
- * Translucent ivory band behind the prompt word. Bleeds edge-to-edge
- * (negative margin cancels the card padding) while its own padding restores
- * the text width, so WORD_SIZE_TIERS (tuned for ~313px) still holds.
+ * Translucent ivory panel behind the prompt word. A contained panel: it spans
+ * the card's inner width (margin -1px) with vertical padding only, so the text
+ * is ~313px wide and WORD_SIZE_TIERS still holds. It does not bleed to the
+ * card edges.
  *
  * No backdrop-filter on purpose: Safari mishandles it inside preserve-3d
  * (flip) contexts. The 88% opacity carries legibility on its own.

@@ -5,20 +5,38 @@ import { FlipCard } from './FlipCard';
 import { useStudySession } from './useStudySession';
 import { sampleDeck, sampleDeckName } from './sampleDeck';
 import { sampleProgress } from './sampleProgress';
+import type { Flashcard, ProgressDocument } from './FlashCards.types';
 
 import { AppShell } from './styles/layout';
 import { TopBar, TopBarRow, AppTitle, Progress } from './styles/header';
 import { Actions, PrimaryBtn, RevealBtn, EmptyState } from './styles/actions';
 import { SummaryState, SummaryTitle, SummaryText } from './styles/summary';
 
-const FlashCards: React.FC = () => {
-  // Placeholder word bank + progress — swap for an S3-backed loader
-  // (words.json + progress.json; see context-FlashCards.md).
-  const wordBank = sampleDeck;
+export interface FlashCardsProps {
+  /** Cards to study. Defaults to the placeholder sample deck. */
+  wordBank?: Flashcard[];
+  /** Persisted SRS state. Defaults to the placeholder sample progress. */
+  progress?: ProgressDocument;
+  /** Title shown in the header. */
+  deckName?: string;
+}
+
+/**
+ * Inputs are read ONCE, at mount (see useStudySession) — changing the props
+ * later does nothing. To load a different deck, remount with a new `key`.
+ * Defaults are the sample data until the S3-backed loader exists (words.json +
+ * progress.json; see context-FlashCards.md). Tests pass their own data through
+ * these props instead of mocking the sample modules.
+ */
+const FlashCards: React.FC<FlashCardsProps> = ({
+  wordBank = sampleDeck,
+  progress = sampleProgress,
+  deckName = sampleDeckName,
+}) => {
   const {
     currentCard, position, total, isFlipped, isComplete,
     gotCount, missedCount, reveal, grade, restart,
-  } = useStudySession(wordBank, sampleProgress);
+  } = useStudySession(wordBank, progress);
 
   const renderBody = () => {
     if (currentCard) {
@@ -71,7 +89,7 @@ const FlashCards: React.FC = () => {
       <AppShell>
         <TopBar>
           <TopBarRow>
-            <AppTitle>{sampleDeckName}</AppTitle>
+            <AppTitle>{deckName}</AppTitle>
             {currentCard && <Progress>{position} of {total}</Progress>}
           </TopBarRow>
         </TopBar>

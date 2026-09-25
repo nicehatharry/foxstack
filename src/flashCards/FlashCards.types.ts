@@ -32,10 +32,12 @@ export type LeitnerBox = 1 | 2 | 3 | 4 | 5;
 
 /**
  * Persisted scheduling state for one word — the S3 `progress.json` record.
- * `dueAt` is an ISO timestamp; the word isn't eligible again until it has
- * passed. `lastSessionId` guards the "next session" minimum: a card graded
- * today with a 1-day interval must not resurface later the same day just
- * because the clock rolled past `dueAt`.
+ * `dueAt` is an ISO timestamp of local midnight on the due day (see
+ * dueDateFor in srs.ts); the word isn't eligible again until it has passed.
+ * `lastSessionId` is the id of the session that last graded the word. It marks
+ * "already graded this session": applyGrade ignores later grades of the same
+ * card in that session (requeue retries, replays), and isDue excludes it if a
+ * queue is ever rebuilt mid-session.
  */
 export interface WordProgress {
   box: LeitnerBox;
