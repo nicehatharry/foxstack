@@ -54,6 +54,34 @@ describe('FlashCards (sample data)', () => {
     expect(screen.queryByText('Session complete')).toBeNull();
   });
 
+  it('tapping the German word toggles its forms panel in place of the translation, without grading or advancing', () => {
+    render(<FlashCards />);
+    tap('Show answer');
+    // c02 = Fernweh: genitive recorded, no plural (see sampleDeck.ts).
+    expect(screen.getByText('longing for faraway places')).toBeTruthy();
+
+    tap('das Fernweh');
+    expect(screen.queryByText('longing for faraway places')).toBeNull();
+    expect(screen.getByText('des Fernwehs')).toBeTruthy();
+    expect(screen.getByText(/no plural form/i)).toBeTruthy();
+    // Grading is still available while the panel is open, and the card hasn't advanced.
+    expect(screen.getByText('Missed it')).toBeTruthy();
+    expect(screen.getByText(/^1 of 9$/)).toBeTruthy();
+
+    tap('das Fernweh');
+    expect(screen.getByText('longing for faraway places')).toBeTruthy();
+    expect(screen.queryByText('des Fernwehs')).toBeNull();
+  });
+
+  it('a card with no recorded forms shows plain (non-interactive) German text on the answer face', () => {
+    render(<FlashCards />);
+    // Queue is c02,c05,c06,c01,c07,... — 4 grades lands on c07 (Rücksichtnahme), which has no `forms` at all.
+    for (let i = 0; i < 4; i++) { tap('Show answer'); tap('Got it'); }
+    expect(screen.getByText(/^5 of 9$/)).toBeTruthy();
+    const german = screen.getByText('die Rücksichtnahme');
+    expect(german.tagName).toBe('P');
+  });
+
   it('tapping the card itself reveals the answer', () => {
     const { container } = render(<FlashCards />);
     const scene = container.querySelector('article')!.parentElement!.parentElement!;

@@ -161,12 +161,19 @@ export const Word = styled.h2<{ $fontSize: number }>`
 
 /**
  * Fills the space between the pill (top) and the grade buttons (bottom) and
- * centres the German word + translation in it. Top padding clears the
- * absolutely positioned pill.
+ * centres the German word + translation (or the forms panel, once expanded)
+ * in it. Top padding clears the absolutely positioned pill.
+ *
+ * `min-height: 0` overrides flexbox's default `min-height: auto`, which would
+ * otherwise force this box to grow to fit its content (the forms panel, on a
+ * long verb) instead of letting FormsScroll's own `overflow-y: auto` do the
+ * scrolling. Without it, a long panel would push past the card's bottom edge
+ * and get hard-clipped by Face's `overflow: hidden` instead of scrolling.
  */
 export const AnswerBody = styled.div`
   display: flex;
   flex: 1;
+  min-height: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -174,13 +181,39 @@ export const AnswerBody = styled.div`
   text-align: center;
 `;
 
-/** The prompt word, small, as a reminder of what was asked (with article for nouns). */
+/** The prompt word, small, as a reminder of what was asked (with article for nouns). Not tappable — see AnswerGermanButton. */
 export const AnswerGerman = styled.p`
   margin: 0 0 12px;
   font-size: 22px;
   font-weight: 500;
   line-height: 1.2;
   color: ${answerText.muted};
+`;
+
+/**
+ * Same look as AnswerGerman, as a real `<button>` — used instead of it when
+ * the card has a forms panel to open (see hasForms in FlashCards.utils.ts).
+ * The dotted underline is the only visual cue that it's tappable; deliberately
+ * not link-blue, which would clash with the answer-tone backgrounds.
+ */
+export const AnswerGermanButton = styled.button`
+  margin: 0 0 12px;
+  padding: 0 0 1px;
+  border: 0;
+  border-bottom: 1px dotted currentColor;
+  background: none;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: ${answerText.muted};
+  cursor: pointer;
+  touch-action: manipulation;
+
+  &:focus-visible {
+    outline: 3px solid ${colors.flagRed};
+    outline-offset: 3px;
+  }
 `;
 
 export const Translation = styled.h2<{ $fontSize: number }>`
