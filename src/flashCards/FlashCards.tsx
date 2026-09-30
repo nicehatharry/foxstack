@@ -37,6 +37,7 @@ const FlashCards: React.FC<FlashCardsProps> = ({
     currentCard, position, total, isFlipped, isComplete,
     gotCount, missedCount, reveal, grade, restart,
   } = useStudySession(wordBank, progress);
+  console.log(wordBank)
 
   const renderBody = () => {
     if (currentCard) {
@@ -66,7 +67,7 @@ const FlashCards: React.FC<FlashCardsProps> = ({
         <>
           <SummaryState>
             <SummaryTitle>Session complete</SummaryTitle>
-            <SummaryText>{gotCount} got it, {missedCount} missed it</SummaryText>
+            <SummaryText>got {gotCount}, missed {missedCount}</SummaryText>
           </SummaryState>
           <Actions>
             <PrimaryBtn type="button" onClick={restart}>Study again</PrimaryBtn>
