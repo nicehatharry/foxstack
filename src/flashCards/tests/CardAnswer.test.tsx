@@ -11,6 +11,10 @@ const nounWithForms: NounCard = {
   forms: { plural: 'Handschuhe', genitiveSingular: 'Handschuhs' },
 };
 const adverbNoForms: AdverbCard = { id: 'v', german: 'trotzdem', english: 'nevertheless', partOfSpeech: 'adverb' };
+const commonGenderNoun: NounCard = {
+  id: 'c', german: 'Angestellte', english: 'employee', partOfSpeech: 'noun', article: 'der/die',
+  forms: { plural: 'Angestellten', genitiveSingular: 'Angestellten' },
+};
 
 describe('CardAnswer — forms toggle', () => {
   it('renders the German word as a button when the card has forms, a plain <p> otherwise', () => {
@@ -22,6 +26,11 @@ describe('CardAnswer — forms toggle', () => {
     expect(screen.queryByRole('button', { name: 'trotzdem' })).toBeNull();
     const p = screen.getByText('trotzdem');
     expect(p.tagName).toBe('P');
+  });
+
+  it('a common-gender noun shows the combined "der/die" article, unchanged from getArticle', () => {
+    render(<CardAnswer card={commonGenderNoun} onGrade={() => {}} />);
+    expect(screen.getByRole('button', { name: 'der/die Angestellte' })).toBeTruthy();
   });
 
   it('starts collapsed (translation showing, aria-expanded false) and toggles on tap', () => {

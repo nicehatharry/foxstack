@@ -9,6 +9,13 @@ import type { Flashcard } from './FlashCards.types';
  * WordForms.tsx and context-FlashCards.md §5). c07 and c09 deliberately have
  * none, to exercise the "no forms panel at all" path; c02 deliberately omits
  * `plural` (Fernweh has none) to exercise the "some fields missing" path.
+ *
+ * c11 is a "der/die" common-gender noun (2026-09-25 decision — see
+ * FlashCards.types.ts's NounArticle and context-FlashCards.md §6/§10) and is
+ * deliberately not due in sampleProgress.ts, the same way c03 isn't, so it
+ * doesn't disturb the pinned queue-order assertion in FlashCards.test.tsx.
+ * It's exercised directly by dedicated fixtures in FlashCards.utils.test.ts,
+ * WordForms.test.tsx and CardAnswer.test.tsx instead.
  */
 export const sampleDeckName = 'Everyday German';
 
@@ -70,5 +77,16 @@ export const sampleDeck: Flashcard[] = [
   {
     id: 'c10', german: 'Feierabend', english: 'end of the workday', partOfSpeech: 'noun', article: 'der',
     forms: { plural: 'Feierabende', genitiveSingular: 'Feierabends' },
+  },
+  {
+    // Common-gender ("der/die") noun: an adjectival noun, so it declines like an
+    // adjective, not a regular noun — plural and genitive singular both end "-en"
+    // regardless of the referent's gender (see getDisplayGenitive), which is why
+    // one stored genitiveSingular stem covers both "des Angestellten" and "der
+    // Angestellten". The prompt side still shows only the bare lemma
+    // ("Angestellte") — the whole point is that you can't tell the gender from
+    // the written word alone; the answer side's split background is the reveal.
+    id: 'c11', german: 'Angestellte', english: 'employee', partOfSpeech: 'noun', article: 'der/die',
+    forms: { plural: 'Angestellten', genitiveSingular: 'Angestellten' },
   },
 ];

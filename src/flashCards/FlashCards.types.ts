@@ -3,10 +3,25 @@ export type PartOfSpeech = 'noun' | 'verb' | 'adjective' | 'adverb' | 'phrase';
 export type Article = 'der' | 'die' | 'das';
 
 /**
+ * A noun's article — either fixed (der/die/das), or, for a small class of
+ * adjectival "common gender" nouns (Genus commune) whose article depends on
+ * the natural gender of the person they refer to, the literal marker
+ * "der/die" — e.g. der Angestellte / die Angestellte (an employee), der/die
+ * Deutsche, der/die Erwachsene. Never "das": these nouns describe people, so
+ * only masculine/feminine apply. See getAnswerTone (the split answer-side
+ * background this drives) and getDisplayGenitive in FlashCards.utils.ts.
+ */
+export type NounArticle = Article | 'der/die';
+
+/**
  * Noun forms shown in the answer-side forms panel (see WordForms.tsx). Stored
  * WITHOUT their article — German plurals always take "die"; genitive singular
  * takes "des" (der/das nouns) or "der" (die nouns) — so the display layer adds
- * the correct one (see FlashCards.utils.ts's GENITIVE_ARTICLE).
+ * the correct one (see FlashCards.utils.ts's GENITIVE_ARTICLE). This holds for
+ * a "der/die" common-gender noun too: its genitive singular ends in "-en" for
+ * either gender (des Angestellten / der Angestellten) — same stem, only the
+ * article differs — so it needs no extra field, just both articles shown
+ * together (getDisplayGenitive does this automatically).
  *
  * Both fields are optional and independent: many nouns genuinely have no
  * plural (Fernweh) or an unremarkable genitive not worth calling out. Show
@@ -79,7 +94,7 @@ interface FlashcardBase {
 /** `article` is required — a noun card that doesn't know its gender is a data error, not an optional detail. */
 export interface NounCard extends FlashcardBase {
   partOfSpeech: 'noun';
-  article: Article;
+  article: NounArticle;
   forms?: NounForms;
 }
 
@@ -120,8 +135,13 @@ export type Flashcard = NounCard | VerbCard | AdjectiveCard | AdverbCard | Phras
 /** How the learner rated a card after seeing the answer. */
 export type Grade = 'got' | 'missed';
 
-/** Background tone of the answer side: noun gender, or 'other' for non-nouns. */
-export type AnswerTone = 'masculine' | 'feminine' | 'neuter' | 'other';
+/**
+ * Background tone of the answer side: noun gender, 'commonGender' for a
+ * der/die noun whose gender depends on the person it refers to (rendered as
+ * a split blue/red background — see answerTones in styles/tokens.ts), or
+ * 'other' for anything that isn't a noun.
+ */
+export type AnswerTone = 'masculine' | 'feminine' | 'neuter' | 'commonGender' | 'other';
 
 /**
  * Leitner box a word currently sits in. 1 is "just missed / brand new and

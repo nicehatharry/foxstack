@@ -1,5 +1,5 @@
 import { WORD_SIZE_TIERS } from './FlashCards.constants';
-import type { AnswerTone, Article, Flashcard, NounCard, NounForms } from './FlashCards.types';
+import type { AnswerTone, Article, Flashcard, NounArticle, NounCard, NounForms } from './FlashCards.types';
 
 /**
  * Picks a font size (px) for the prompt word so it fits without mid-word
@@ -24,18 +24,27 @@ const ARTICLE_TONE: Record<Article, AnswerTone> = {
   das: 'neuter',
 };
 
-/** Answer-side background: noun gender if known, otherwise 'other'. Pure. */
+/**
+ * Answer-side background: noun gender if fixed, 'commonGender' for a der/die
+ * noun (its gender depends on the person it refers to, not on the word
+ * itself — see NounArticle in FlashCards.types.ts), otherwise 'other'. Pure.
+ */
 export function getAnswerTone(card: Flashcard): AnswerTone {
   if (card.partOfSpeech !== 'noun') return 'other';
+  if (card.article === 'der/die') return 'commonGender';
   return ARTICLE_TONE[card.article];
 }
 
 /**
- * The card's article if it's a noun, otherwise undefined. Centralises the
- * discriminated-union narrowing so callers (CardAnswer, CardPrompt) never
- * touch `.article` on a bare `Flashcard`. Pure.
+ * The card's article if it's a noun, otherwise undefined — this may be the
+ * literal string "der/die" for a common-gender noun (NounArticle), not just
+ * a single fixed Article; interpolating it straight into "${article}
+ * ${german}" (as CardAnswer does) already produces the correct "der/die
+ * Angestellte" with no extra handling. Centralises the discriminated-union
+ * narrowing so callers (CardAnswer, CardPrompt) never touch `.article` on a
+ * bare `Flashcard`. Pure.
  */
-export function getArticle(card: Flashcard): Article | undefined {
+export function getArticle(card: Flashcard): NounArticle | undefined {
   return card.partOfSpeech === 'noun' ? card.article : undefined;
 }
 
@@ -66,7 +75,16 @@ export function getDisplayPlural(forms: NounForms | undefined): string | undefin
   return forms?.plural ? `${PLURAL_ARTICLE} ${forms.plural}` : undefined;
 }
 
-/** "des Handschuhs" / "der Rücksichtnahme", or undefined if no genitive is recorded. Pure. */
+/**
+ * "des Handschuhs" / "der Rücksichtnahme", or undefined if no genitive is
+ * recorded. For a common-gender noun ("der/die"), shows both — "des/der
+ * Angestellten" — since the stem is identical for either referent's gender
+ * (weak/adjectival declension always ends "-en" in the genitive singular);
+ * only the article varies, so no second stored form is needed. Pure.
+ */
 export function getDisplayGenitive(card: NounCard): string | undefined {
-  return card.forms?.genitiveSingular ? `${GENITIVE_ARTICLE[card.article]} ${card.forms.genitiveSingular}` : undefined;
+  if (!card.forms?.genitiveSingular) return undefined;
+  const stem = card.forms.genitiveSingular;
+  if (card.article === 'der/die') return `${GENITIVE_ARTICLE.der}/${GENITIVE_ARTICLE.die} ${stem}`;
+  return `${GENITIVE_ARTICLE[card.article]} ${stem}`;
 }

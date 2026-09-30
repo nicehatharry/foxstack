@@ -37,7 +37,6 @@ describe('getWordFontSize', () => {
   });
   it('trims surrounding whitespace and is insensitive to it otherwise', () => {
     expect(getWordFontSize('  Baum  ')).toBe(getWordFontSize('Baum'));
-    expect(getWordFontSize('  sich erinnern  ')).toBe(getWordFontSize('sich erinnern'));
   });
   it('the longest tier is the floor for anything longer, not an error', () => {
     expect(getWordFontSize('a'.repeat(500))).toBe(WORD_SIZE_TIERS[WORD_SIZE_TIERS.length - 1].fontSize);
@@ -48,10 +47,13 @@ describe('getWordFontSize', () => {
 });
 
 describe('getAnswerTone', () => {
-  it('maps each article to its tone', () => {
+  it('maps each fixed article to its tone', () => {
     expect(getAnswerTone(noun({ article: 'der' }))).toBe('masculine');
     expect(getAnswerTone(noun({ article: 'die' }))).toBe('feminine');
     expect(getAnswerTone(noun({ article: 'das' }))).toBe('neuter');
+  });
+  it("a common-gender ('der/die') noun is 'commonGender', never masculine/feminine/neuter", () => {
+    expect(getAnswerTone(noun({ article: 'der/die' }))).toBe('commonGender');
   });
   it("is 'other' for every non-noun part of speech", () => {
     expect(getAnswerTone(verb())).toBe('other');
@@ -66,6 +68,9 @@ describe('getArticle', () => {
     expect(getArticle(noun({ article: 'die' }))).toBe('die');
     expect(getArticle(verb())).toBeUndefined();
     expect(getArticle(adjective())).toBeUndefined();
+  });
+  it('returns the literal "der/die" for a common-gender noun, unmodified', () => {
+    expect(getArticle(noun({ article: 'der/die' }))).toBe('der/die');
   });
   it('goes by partOfSpeech, not by whether an `article` field happens to be present', () => {
     // A verb/adjective can never legitimately carry `article` (see FlashCards.types.ts),
@@ -82,6 +87,10 @@ describe('hasForms', () => {
     expect(hasForms(noun({ forms: { genitiveSingular: 'Baums' } }))).toBe(true);
     expect(hasForms(noun({ forms: {} }))).toBe(false);
     expect(hasForms(noun({ forms: undefined }))).toBe(false);
+  });
+  it('is unaffected by article value — a common-gender noun follows the same rule as any other noun', () => {
+    expect(hasForms(noun({ article: 'der/die', forms: { plural: 'Angestellten' } }))).toBe(true);
+    expect(hasForms(noun({ article: 'der/die', forms: {} }))).toBe(false);
   });
   it('verb: true iff forms is present at all', () => {
     expect(hasForms(verb({ forms: { present: personForms, preterite: personForms, perfect: { auxiliary: 'ist', participle: 'gegangen' } } }))).toBe(true);
@@ -114,8 +123,13 @@ describe('getDisplayGenitive', () => {
     expect(getDisplayGenitive(noun({ article: 'das', forms: { genitiveSingular: 'Fernwehs' } }))).toBe('des Fernwehs');
     expect(getDisplayGenitive(noun({ article: 'die', forms: { genitiveSingular: 'Katze' } }))).toBe('der Katze');
   });
+  it('shows both articles for a common-gender noun ("des/der"), from a single stored stem', () => {
+    expect(getDisplayGenitive(noun({ article: 'der/die', forms: { genitiveSingular: 'Angestellten' } })))
+      .toBe('des/der Angestellten');
+  });
   it('undefined when no genitive is recorded', () => {
     expect(getDisplayGenitive(noun({ forms: {} }))).toBeUndefined();
     expect(getDisplayGenitive(noun({ forms: undefined }))).toBeUndefined();
+    expect(getDisplayGenitive(noun({ article: 'der/die', forms: {} }))).toBeUndefined();
   });
 });

@@ -31,6 +31,16 @@ describe('WordForms — noun', () => {
     expect(screen.getByText('der Katze')).toBeTruthy();
   });
 
+  it('a common-gender ("der/die") noun shows both genitive articles from its one stored stem', () => {
+    render(<WordForms id="f" card={{
+      id: 'n3', german: 'Angestellte', english: 'employee', partOfSpeech: 'noun', article: 'der/die',
+      forms: { plural: 'Angestellten', genitiveSingular: 'Angestellten' },
+    }}
+    />);
+    expect(screen.getByText('die Angestellten')).toBeTruthy(); // plural — unaffected by the gender split
+    expect(screen.getByText('des/der Angestellten')).toBeTruthy();
+  });
+
   it('row headers are real <th scope="row"> for assistive tech', () => {
     render(<WordForms id="f" card={{ ...base, forms: { plural: 'Handschuhe' } }} />);
     const th = screen.getByText('Plural');
