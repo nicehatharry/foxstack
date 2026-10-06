@@ -1,17 +1,17 @@
 # FlashCards — working context
 
-For a future Claude session picking this up cold. Read this before touching code; check claims against the code before large changes. Last reviewed 2026-09-25 (six passes: full read + executed tests; decisions applied and a test suite added; test suite hardened against the host's actual toolchain; word-forms feature added; verb table changed to a two-column layout; common-gender "der/die" nouns given a split answer background). **[verified]** = confirmed by running code, either the test suite (§9) or a one-off check; untagged claims come from reading.
+Read this before touching code; check claims against the code before large changes. Last reviewed 2026-09-25 (six passes: full read + executed tests; decisions applied and a test suite added; test suite hardened against the host's actual toolchain; word-forms feature added; verb table changed to a two-column layout; common-gender "der/die" nouns given a split answer background). **[verified]** = confirmed by running code, either the test suite (§9) or a one-off check; untagged claims come from reading.
 
 ## 1. Snapshot
 
-Single-page German→English vocabulary flashcards (Anki-style), mobile-first (iPhone 15, 393×852 CSS px). Sibling of the GroceryList site and shares its conventions: styled-components with `$transient` props, co-located `styles/`, pure utils, `animations.ts`, barrel `index.ts`, and a `tests/` subfolder. **GroceryList's source is not in this folder** — mentions of `s3Storage.ts` / `historyStore.ts` point at files the user would need to re-upload.
+Single-page German→English vocabulary flashcards (Anki-style), mobile-first (iPhone 15, 393×852 CSS px). Shares conventions with sibling sites: styled-components with `$transient` props, co-located `styles/`, pure utils, `animations.ts`, barrel `index.ts`, and a `tests/` subfolder. **Sibling sites' source is not in this folder** — mentions of `s3Storage.ts` / `historyStore.ts` point at files the user would need to re-upload.
 
-**Done:** prompt → tap-to-flip → in-card Got it / Missed it; Leitner scheduling with calendar-day due dates; session composition (cap, new-word throttling, interleaving); in-session requeue of misses; an answer-side forms panel (noun plural/genitive, verb conjugation, adjective comparison — tap the German word to open it); "der/die" common-gender nouns with a split blue/red answer background; 132-test suite.
+**Done:** prompt → tap-to-flip → in-card Got it / Missed it; Leitner scheduling with calendar-day due dates; session composition (cap, new-word throttling, interleaving); in-session requeue of misses; an answer-side forms panel (noun plural/genitive, verb conjugation, adjective comparison — tap the German word to open it); gender-informed styling for nouns vs other word forms; 132-test suite.
 **Not done:** any persistence. No S3 read/write, no auth wrapper. `progressDraft` lives in hook state and is lost on reload. Data comes from `sampleDeck.ts` and `sampleProgress.ts`.
 
-**Folder name is `flashCards`** (camelCase — confirmed by the user). Match this casing in imports; case-sensitive CI/Linux breaks on a mismatch. The parent path (`src/…`) isn't in the upload.
+**Folder name is `flashCards`** Match camel casing. The parent path (`src/…`) isn't in the upload.
 
-**Tests live in `flashCards/tests/`** (confirmed by the user, 2026-09-24), one level below the source they test, so they import it via `../` (e.g. `import { srs } from '../srs'`). The user fixed these import paths themselves after an earlier review put tests alongside the source; don't move them back, and match the `../` convention in any new test file. Only touch a test file's imports if you're already returning some other, substantive change to that file.
+**Tests live in `flashCards/tests/`** one level below the source they test (e.g. `import { srs } from '../srs'`). 
 
 **Stack** — from the host's `package.json` (project name `foxstack`; the host app itself is not in this folder): React **19.2**, styled-components 6.5, wouter (routing), TypeScript **6.0**, Vite **8.1** with `@vitejs/plugin-react` 6 and `@vanilla-extract/vite-plugin` (vanilla-extract is not used by this folder), `@fontsource/barlow-semi-condensed`. For the future S3 loader the host already has `@aws-sdk/client-s3`, `@aws-sdk/credential-provider-cognito-identity` and `aws-amplify`. Lint: ESLint 10 with `eslint-plugin-react-hooks` 7 (React-Compiler-era rules: no ref access or impure calls like `Date.now()` during render) and `react-refresh`, run with `--max-warnings 0`. Tests: vitest **4.1**, jsdom **29**, `@testing-library/react` **16** (+ `dom` 10, `jest-dom` 6). This folder typechecks under strict TS 6 with Vite-template flags (`verbatimModuleSyntax`, `erasableSyntaxOnly`, `noUnused*`) and lints clean **[verified on the declared minimum versions and on latest-in-range]**. The host must supply a viewport meta with `viewport-fit=cover` (else `env(safe-area-inset-*)` is 0) and `vite/client` types for the `*.css` font imports in `GlobalStyle.ts`. The host's own `vite.config.ts` / vitest setup was **not seen** — see the mocking pitfall in §9.
 
@@ -19,11 +19,11 @@ Single-page German→English vocabulary flashcards (Anki-style), mobile-first (i
 
 - `srs.ts` stays **pure**: no React, no `Date.now()`. Callers pass `now` and `sessionId`. Same for anything time- or randomness-dependent you add.
 - Session state lives only in `useStudySession`; components are presentational.
-- Tunables go in `FlashCards.constants.ts` with a comment stating the trade-off. CSS imports `FLIP_DURATION_MS` from there — never hardcode a duplicate.
+- Tunables go in `FlashCards.constants.ts` with a comment stating the trade-off.
 - Scheduling semantics (intervals, box rules, what counts as a review) are product decisions. Raise them; don't change them silently.
-- **Run the tests before returning code (the host's `npm test` is `vitest`, i.e. watch mode; one-shot is `npm test -- --run`), and add/adjust tests in the same change.** A behaviour change without a test change is a red flag. Don't `vi.mock` this folder's own modules in tests (§9) — pass data through props. Bug fixes get a regression test that fails without the fix (§9 lists how this was proven).
-- Update this file in the same change as the code it describes. It has drifted from the code before (§10); stale docs mislead the next session more than no docs.
-- **Word forms (plural, genitive, conjugation, comparative/superlative) are authored, reviewed strings, never generated at runtime** (user decision, 2026-09-24). Nothing in this folder should try to derive a German inflection from a rule — irregulars are exactly the point (see §6, §8).
+- **Run the tests before returning code (the host's `npm test` is `vitest`, i.e. watch mode; one-shot is `npm test -- --run`), and add/adjust tests in the same change.** A behaviour change without a test change is a red flag. Don't `vi.mock` this folder's own modules in tests (§9) — pass data through props. Bug fixes get a regression test that fails without the fix.
+- Update this file in the same change as the code it describes.
+- **Word forms (plural, genitive, conjugation, comparative/superlative) are authored, reviewed strings, never generated at runtime**
 - **This folder stays free of any Amplify/S3 import.** The auth paradigm elsewhere in the host is a top-line side-effect import (`import './config/amplify'`) in whatever module does the authenticated fetch; `FlashCards` and everything under this folder take plain data as props (§4) and have no reason to know Cognito or S3 exist. The future loader (§7, §8 item 1) does that import and the fetch, then renders `<FlashCards wordBank={...} progress={...} />` — confirmed with the user this needs no deviation from the existing pattern.
 
 ## 3. Task → file lookup
@@ -112,12 +112,8 @@ useStudySession ─▶ buildSessionQueue (ONCE, at mount)
 
 **Grade → box** (`scheduleNext`): Missed → always box 1 (`lapses`+1). Got → box+1, capped at 5. A word's first-ever grade (got or missed) → box 1. **[verified]**
 
-**`dueAt` = local midnight, N calendar days after the grading day** (`dueDateFor`). Time of day at grading is irrelevant **[verified]**: a card graded 08:05 yesterday is due at 08:00 today; a card graded at any time today is not due again today, even at 23:59:59. Consequences to know:
-- Box 1 means "tomorrow morning", so a card graded at 23:59 is due one minute later. That's intended ("next calendar day", not "24 h later").
-- Implemented with calendar arithmetic (`new Date(y, m, d + n)`), not `+ n×24 h`, so DST transitions can't shift it to 23:00/01:00 **[verified in America/Chicago, Los_Angeles, Berlin, Kolkata, Auckland, UTC]**. In zones where a DST jump skips local midnight, JS lands on the first valid time that day (≈01:00) — harmless.
-- Stored as an absolute ISO/UTC instant. "Local" is the device's zone *at grading time*; travelling afterwards doesn't rewrite it.
-
-**First grade per session wins** (`applyGrade`): once `progress.words[id].lastSessionId === sessionId`, further grades of that card in the same session — the requeue retry after a miss, or a "Study again" replay — leave `progressDraft` untouched, including `meta`. So `successRate`/`totalReviews` measure first-exposure recall only (**user-confirmed design**), and "Study again" is pure practice. **[verified]** *(Before this rule: miss-then-got-on-retry landed in box 2 — a longer interval than a clean first-try got — and replays advanced boxes twice in a day.)*
+**`dueAt` = local midnight, N calendar days after the grading day** (`dueDateFor`). Time of day at grading is irrelevant **[verified]**
+**First grade per session wins** (`applyGrade`): once `progress.words[id].lastSessionId === sessionId`, further grades of that card in the same session leave `progressDraft` untouched, including `meta`. So `successRate`/`totalReviews` measure first-exposure recall only (**user-confirmed design**), and "Study again" is pure practice. **[verified]**
 
 **`successRate`**: exponential moving average, α = `SUCCESS_RATE_SMOOTHING` (0.2). The first-ever review sets it outright to 0 or 1 rather than blending. Used only to size the new-word budget. From 0 it takes six consecutive first-try Gots to reach ≥ 0.7 **[verified]**.
 
@@ -130,7 +126,7 @@ Note on `isDue`'s `lastSessionId` clause: with a fresh session id at build time 
 
 **In-session requeue vs. persisted schedule are different mechanisms.** A missed card is spliced `MISSED_REQUEUE_GAP` (4) cards later in `liveQueue` — ephemeral, never touches `progressDraft` (its schedule was fixed by its first grade). Clamped to the queue end: with < 4 cards left it goes last; if it *was* last (or the only card) it is the very next card **[verified]**. There is no retry cap: the session ends only when every requeued instance is finally graded Got **[verified]**.
 
-**Opening the forms panel (WordForms) never affects scheduling.** It's local UI state in `CardAnswer` (§4), entirely outside `useStudySession`/`srs.ts`. A learner can open and close it as many times as they like without changing `progressDraft`, `gotCount`/`missedCount`, or the queue **[verified]**.
+**Opening the forms panel (WordForms) never affects scheduling.** **[verified]**.
 
 ## 6. Invariants — break these and things visibly fail
 
@@ -152,45 +148,35 @@ Note on `isDue`'s `lastSessionId` clause: with a fresh session id at build time 
 
 **Word sizing.** `getWordFontSize` picks px from `WORD_SIZE_TIERS` by `max(longest token, ceil(total length / 2))`, for both the German prompt and the English translation. `lang` (`de`/`en`) + `hyphens: auto` are the fallback for anything still too wide. Tiers are tuned for Barlow Semi Condensed 700 in a ~313 px inner width (393 − 2×16 gutter − 2×24 `cardPadding`) — retune if the font, gutter or `cardPadding` change. Not visually verified (§9).
 
-**`WordPanel` is a contained panel** (user-confirmed; code is the truth): `margin: -1px; padding: 48px 0; border-radius: 25px` — full inner width, vertical padding only, no bleed to the card edges. Its comment in `card.ts` was corrected to match; older docs describing an edge-to-edge bleed were wrong.
-
 **Mobile.** `AppShell` uses `100dvh` (with `100vh` fallback) and `max(env(safe-area-*), gutter)` padding. Tap targets ≥ 44 px (buttons are 56 px). Primary actions sit at the bottom (thumb zone). `touch-action: manipulation` on buttons and the card; card text is `user-select: none`.
 
-**Contrast claims in `tokens.ts` hold [verified, computed]:** `inkMuted` on page 5.3:1; ink on answer tones 12.7–14.2:1; ink on the ivory panel over any band 13.6–15.6:1; red focus ring on the feminine tone 4.7:1. The `commonGender` split adds no new colour to check (see below).
+**Contrast claims in `tokens.ts` hold [verified, computed]:** `inkMuted` on page 5.3:1; ink on answer tones 12.7–14.2:1; ink on the ivory panel over any band 13.6–15.6:1; red focus ring on the feminine tone 4.7:1.
 
-**Common-gender nouns (`article: 'der/die'`) — a split blue/red answer background** (2026-09-25 decision). Some nouns take the gender of the person they refer to: der Angestellte / die Angestellte, der/die Deutsche, der/die Erwachsene. They're adjectival nouns, so never neuter — only masculine or feminine apply, which is why the marker is the specific literal `'der/die'` (`NounArticle = Article | 'der/die'`) rather than a general "any combination" mechanism. What it drives:
-- `getAnswerTone` returns `'commonGender'`; `answerTones.commonGender` is `linear-gradient(to right, <masculine> 50%, <feminine> 50%)`. **Hard stop, not a blend**, so every pixel is one of the two already-verified pastels (a blended midpoint would be a new, unverified colour). **Blue left, red right**, matching the left-to-right order of the "der/die" text on the card. Both are pinned by exact-string assertions in `FlipCard.test.tsx` — a first, looser version of that test ("contains a gradient and both hex codes") let a blend and a colour-swap mutation through; see §9.
-- The gradient is built from the same `answerToneColors` values the solid tones use, so the split can't drift out of sync with them. `CardBack`'s `background: ${answerTones[$tone]}` needed no change — a CSS `background` accepts a gradient exactly as it does a colour.
-- **No `WordPanel`-style backing was added**, deliberately. The front face needs one because it puts *light* text over *dark/gold* bands (light-on-gold would fail contrast). The back puts *dark* ink over two *pale* pastels, both independently verified at 12.7–14.2:1, so text straddling the seam is legible on either side. The seam does run through the centre of the card, directly behind the centred German word — that's a legibility non-issue but a possible *aesthetic* one, and it has not been seen on a device (§9).
-- The prompt side is unchanged: it shows only the bare lemma ("Angestellte"). That's pedagogically right — you can't tell from the written word that it varies with the referent; the split background is the reveal.
-- `getDisplayGenitive` shows both articles from the one stored stem: `des/der Angestellten`. This works without a second stored field because an adjectival noun's genitive singular ends `-en` for either gender (only the article differs). The plural (`die Angestellten`) is unaffected. A loader validating `words.json` must accept `'der/die'` as an `article` value (§7).
-- **Not covered, on purpose:** other dual-gender phenomena are different beasts and have no representation yet — meaning-changing pairs (der See "lake" / die See "sea"), regional variation (der/das Joghurt), and words whose grammatical gender contradicts the referent (das Mädchen). Extending `NounArticle` to other combinations is a type change plus a new tone decision each, not a config tweak.
+**Common-gender nouns (`article: 'der/die'`) — a split blue/red answer background** 
 
-**Never access `.article` or `.forms` on a bare `Flashcard`.** It's a discriminated union (`NounCard | VerbCard | AdjectiveCard | AdverbCard | PhraseCard`); TypeScript only lets you touch `.article` after narrowing to `NounCard`, and each variant's `.forms` is a different shape. `getArticle`, `hasForms`, `getDisplayPlural`, `getDisplayGenitive` (all in `FlashCards.utils.ts`) are the established narrowing points — extend those instead of writing new `card.partOfSpeech === '...'` checks inline. Confirmed this isn't just a type-checker nicety: a mutation that made `getArticle` return `.article` unconditionally (bypassing the discriminant) wasn't caught until a test specifically constructed a non-noun object with a stray `article` field on it (`FlashCards.utils.test.ts`) — normal test fixtures never exercise bad data like that.
+- **No `WordPanel`-style backing**
 
-**The forms toggle must `stopPropagation`, same as the grade buttons.** `CardAnswer`'s German-word button and `Scene`'s tap-to-reveal share the same click surface once the card is flipped. Without `e.stopPropagation()` in `toggleForms`, tapping the word would also bubble to `Scene`'s `onClick={onReveal}` — currently harmless only because `reveal` is idempotent (§ below), but that's incidental, not a guarantee to rely on. Guarded by a regression test in `CardAnswer.test.tsx` that renders `CardAnswer` inside a manually wrapped `onClick` spy and asserts it's never called **[verified: fails if stopPropagation is removed]**.
+- **Not covered, on purpose:** meaning-changing pairs (der See "lake" / die See "sea"), regional variation (der/das Joghurt), and words whose grammatical gender contradicts the referent (das Mädchen). Extending `NounArticle` to other combinations is a type change plus a new tone decision each, not a config tweak.
 
-**A missing form is always explanatory text, never a blank cell.** A noun with no recorded plural (Fernweh) shows "No plural form" in that row, not an empty `<td>` — the learner should be able to tell "this word has none" apart from "this hasn't been authored yet" (though today both look the same; see §8). Applies per-field, independently: a card can have a genitive but no plural, or vice versa.
+**Never access `.article` or `.forms` on a bare `Flashcard`.** It's a discriminated union (`NounCard | VerbCard | AdjectiveCard | AdverbCard | PhraseCard`)
 
-**Perfekt is 3rd-person-singular only, not a 6-person table.** Präsens and Präteritum are full tables; Perfekt (`VerbForms.perfect`) deliberately isn't, matching how German is conventionally taught and memorized ("gehen, ging, ist gegangen") — the auxiliary's own conjugation (habe/hast/hat…) is assumed known. Don't "complete" this into a 6-person Perfekt table without checking with the user first; it was a deliberate scope decision, not an oversight.
+**The forms toggle must `stopPropagation`, same as the grade buttons.**  **[verified: test fails if stopPropagation is removed]**.
 
-**Reflexive verbs have no boolean flag.** A verb is reflexive if and only if its `german` lemma starts with "sich" (e.g. `sich erinnern`, matching German dictionary convention) — there's no separate `reflexive: true` field to keep in sync. Each person's conjugated form in `VerbPersonForms` bakes in its own reflexive pronoun directly (`ich: 'erinnere mich'`, `wir: 'erinnern uns'`, …); `WordForms.tsx` just displays whatever string is there and does no reflexive-pronoun logic of its own. The Perfekt participle does the same (`'sich erinnert'`, not `'erinnert'`), since that form isn't conjugated by person.
+**Perfekt is 3rd-person-singular only, not a 6-person table.** Präsens and Präteritum are full tables; Perfekt (`VerbForms.perfect`) deliberately isn't, matching how German is conventionally taught and memorized.
 
-**Plural and genitive articles are computed, never stored.** `getDisplayPlural`/`getDisplayGenitive` prefix "die" (always, for any plural) or "des"/"der" (from the noun's own gender) onto the stored bare form. This is a fixed, universal mapping — unlike the forms themselves, it needs no authoring and can't be "wrong" per word, so don't add an `article` field to `NounForms`.
+**Reflexive verbs have no boolean flag.** A verb is reflexive if and only if its `german` lemma starts with "sich" (e.g. `sich erinnern`, matching German dictionary convention)
+
+**Plural and genitive articles are computed, never stored.** `getDisplayPlural`/`getDisplayGenitive` prefix "die" (always, for any plural) or "des"/"der" (from the noun's own gender) onto the stored bare form. This is a fixed, universal mapping, so don't add an `article` field to `NounForms`.
 
 **A long forms panel scrolls inside the card; it must not get clipped.** `AnswerBody` has `min-height: 0` and `WordForms`' `FormsScroll` has `overflow-y: auto; max-height: 100%` specifically so a full verb table (13+ rows) scrolls internally rather than being cut off by `Face`'s `overflow: hidden`. This chain is reasoned from CSS flexbox rules, not seen on a device — jsdom can't lay anything out. If a verb's table looks clipped or unscrollable on a real phone, look here first (§9).
 
-**The Präsens/Präteritum tables are two columns, paired singular-with-plural (ich/wir, du/ihr, er,sie,es/sie,Sie), not one column of six rows** (2026-09-25 decision — a better use of card width). This halves the width available to each conjugated form (~313px of card down to roughly 90–110px per value column, by rough estimate — not measured on a device), which is a real constraint for German's long compound/reflexive forms: `"erinnertest dich"` (17 chars, the longest value in the sample deck) is the realistic stress case, not a hypothetical one. Three things guard against it, and were each mutation-tested to confirm they're load-bearing:
-- `FormsValue` has `overflow-wrap: break-word; hyphens: auto;` so a value with nowhere to wrap (a single long token) breaks or hyphenates instead of overflowing its column. Today every value has a space to wrap at anyway (reflexive forms are always two words), so this specifically guards against forms nobody has authored yet — a future long compound verb, not today's deck.
-- A `<tr>` with two `<th scope="row">` cells is genuinely ambiguous for assistive tech — the browser's default header-association algorithm can attribute a data cell to *every* preceding row-header in its row, so "wir"'s value could get announced as belonging to both "ich" and "wir". Each `FormsValue` carries an explicit `headers` attribute pointing at only its own `FormsLabel`'s `id` (the WCAG H43 technique) to remove that ambiguity. `idPrefix` (passed into `PersonTable` as `` `${id}-present` `` / `` `${id}-preterite` ``) exists because Präsens and Präteritum reuse the same person keys (`ich`, `wir`, …) and would collide without it.
-- The two label columns are naturally different widths (`"er/sie/es"` is visibly wider than `"sie/Sie"`), so the two value columns don't get perfectly equal space either — this is a minor, accepted cosmetic asymmetry, not a bug to "fix" by forcing equal-width columns (which would either waste space or truncate the wider label).
-Not yet done, and worth a look if a real device shows it's actually a problem: reducing `FormsValue`'s font-size specifically for this narrower two-column context (kept at 16px, same as the single-column noun/adjective tables, on the theory that wrap+hyphenation would be enough); a visible divider between the "ich" pair and "wir" pair beyond the `FormsLabelSecond` left-padding, if the two halves turn out to be hard to tell apart at a glance.
+**The Präsens/Präteritum tables are two columns, paired singular-with-plural (ich/wir, du/ihr, er,sie,es/sie,Sie), not one column of six rows**
 
 ## 7. Persistence design (planned, not built)
 
 Two S3 documents, mirroring GroceryList's content/state split:
 
-**`vocabulary/words.json`** — word bank; rarely changes. Keys are synthetic ids (`c01`, …), never the German text: German has homonyms distinguished only by article (*der Band* / *das Band*), and fixing a typo must not orphan review history. `article` may also be `"der/die"` for a common-gender noun (§6). `forms` is optional per FlashCards.types.ts and per-word — omit it entirely for a card whose forms haven't been authored yet (see §6: that reads identically to "this word genuinely has none", a known gap).
+**`vocabulary/words.json`** — word bank; rarely changes. Keys are synthetic ids (`c01`, …). `article` may also be `"der/die"` for a common-gender noun (§6). `forms` is optional per FlashCards.types.ts and per-word — omit it entirely for a card whose forms haven't been authored yet (see §6: that reads identically to "this word genuinely has none", a known gap).
 ```json
 {
   "c01": {
@@ -215,7 +201,7 @@ Two S3 documents, mirroring GroceryList's content/state split:
 { "meta": { "successRate": 0.82, "totalReviews": 143 },
   "words": { "c01": { "box": 3, "lapses": 1, "dueAt": "2026-10-02T05:00:00.000Z", "lastSessionId": "s_1790000000000" } } }
 ```
-`dueAt` is local midnight rendered as UTC — the example is a US-Central device (05:00Z = 00:00 CDT); it will differ by zone. A word absent from `words` is "new". `meta` is one EMA + a count, so it stays small at any deck size. `lapses` is all-time misses, unused for scheduling (reserved for leech detection).
+`dueAt` is local midnight rendered as UTC. `meta` is one EMA + a count, so it stays small at any deck size. `lapses` is all-time misses, unused for scheduling (reserved for leech detection).
 
 **Write strategy:** optimistic local update, fire-and-forget S3 save, `console.warn` on failure, no ETag locking (single device assumed) — same as GroceryList's `historyStore.ts`. Write `progressDraft` once per session (on completion, plus `visibilitychange`/`pagehide` as a safety net), not per grade.
 

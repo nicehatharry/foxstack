@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Homepage } from './homepage'
 import { Route, Switch } from "wouter"
 import { FlashCards } from './flashCards'
+import { a1Deck } from './flashCards/a1Deck'
 
 // GroceryList's module graph pulls in config/amplify → config/aws
 const GroceryList = lazy(() => import('./groceryList/GroceryList'))
@@ -35,7 +36,7 @@ const App = () => (
 
       <Route path="/flashcards">
         <Suspense fallback={null}>
-          <FlashCards />
+          <FlashCards wordBank={a1Deck} />
         </Suspense>
       </Route>
 
