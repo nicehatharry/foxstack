@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { createDeck, withProgress } from './decks';
+import { createDeck, withCard, withProgress } from './decks';
 import type { CardDraft, DeckRecord } from './decks';
 import type { ProgressDocument } from './FlashCards.types';
 
@@ -33,5 +33,9 @@ export function useDeckLibrary(
     setDecks((prev) => withProgress(prev, deckId, progress));
   }, []);
 
-  return { decks, addDeck, saveProgress };
+  const addCard = useCallback((deckId: string, draft: CardDraft) => {
+    setDecks((prev) => withCard(prev, deckId, draft));
+  }, []);
+
+  return { decks, addDeck, addCard, saveProgress };
 }

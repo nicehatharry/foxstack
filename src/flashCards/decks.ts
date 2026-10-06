@@ -24,6 +24,10 @@ export type CardDraft = { german: string; english: string } & (
   | { partOfSpeech: Exclude<PartOfSpeech, 'noun'> }
 );
 
+/** "der Hund: dog" — one line describing a draft (shared by the create-deck and add-word forms). */
+export const describeDraft = (draft: CardDraft): string =>
+  `${draft.partOfSpeech === 'noun' ? `${draft.article} ` : ''}${draft.german.trim()}: ${draft.english.trim()}`;
+
 export const PART_OF_SPEECH_OPTIONS: readonly { value: PartOfSpeech; label: string }[] = [
   { value: 'noun', label: 'Noun' },
   { value: 'verb', label: 'Verb' },
@@ -77,6 +81,22 @@ export function withProgress(
   progress: ProgressDocument,
 ): DeckRecord[] {
   return decks.map((deck) => (deck.id === deckId ? { ...deck, progress } : deck));
+}
+
+/**
+ * Append one card to one deck; every other deck keeps its identity. The new id is
+ * the first `cNN` free in BOTH the word bank and the progress map, so a card can
+ * never inherit the SRS state of an orphaned progress entry (context §7). The new
+ * word has no progress record, so it is "new" from the next session on.
+ */
+export function withCard(decks: DeckRecord[], deckId: string, draft: CardDraft): DeckRecord[] {
+  return decks.map((deck) => {
+    if (deck.id !== deckId) return deck;
+    const used = new Set([...deck.wordBank.map((c) => c.id), ...Object.keys(deck.progress.words)]);
+    let n = deck.wordBank.length;
+    while (used.has(cardId(n))) n += 1;
+    return { ...deck, wordBank: [...deck.wordBank, draftToCard(cardId(n), draft)] };
+  });
 }
 
 /** "4 of 9 cards started". Progress ids absent from the word bank are ignored (context §7). */

@@ -32,7 +32,7 @@ const FlashCardsApp: React.FC<FlashCardsAppProps> = ({
   initialDecks = defaultDecks,
   onLibraryChange,
 }) => {
-  const { decks, addDeck, saveProgress } = useDeckLibrary(initialDecks, onLibraryChange);
+  const { decks, addDeck, addCard, saveProgress } = useDeckLibrary(initialDecks, onLibraryChange);
   const [view, setView] = useState<View>({ kind: 'picker' });
 
   const toPicker = () => setView({ kind: 'picker' });
@@ -61,6 +61,7 @@ const FlashCardsApp: React.FC<FlashCardsAppProps> = ({
             deckName={deck.name}
             onProgressChange={(next) => saveProgress(deck.id, next)}
             onBack={toPicker}
+            onAddCard={(draft) => addCard(deck.id, draft)}
           />
         );
       }

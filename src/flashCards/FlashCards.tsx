@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { GlobalStyle } from './GlobalStyle';
 import { FlipCard } from './FlipCard';
@@ -6,9 +6,12 @@ import { useStudySession } from './useStudySession';
 import { sampleDeck, sampleDeckName } from './sampleDeck';
 import { sampleProgress } from './sampleProgress';
 import type { Flashcard, ProgressDocument } from './FlashCards.types';
+import type { CardDraft } from './decks';
+import { AddWordSheet } from './AddWordSheet';
 
 import { AppShell } from './styles/layout';
-import { TopBar, TopBarRow, AppTitle, Progress } from './styles/header';
+import { TopBarRow, AppTitle, Progress } from './styles/header';
+import { HeaderEnd, AddWordBtn } from './styles/addWord';
 import { BackBtn, TitleGroup } from './styles/decks';
 import { Actions, PrimaryBtn, RevealBtn, EmptyState } from './styles/actions';
 import { SummaryState, SummaryTitle, SummaryText } from './styles/summary';
@@ -28,6 +31,12 @@ export interface FlashCardsProps {
   onProgressChange?: (progress: ProgressDocument) => void;
   /** When provided, a back button is shown in the header. */
   onBack?: () => void;
+  /**
+   * When provided, a "+" in the header opens an add-word form. The new word is
+   * the owner's to store; it joins the NEXT session (this one's queue is fixed
+   * at mount, so `wordBank` changes are still ignored).
+   */
+  onAddCard?: (draft: CardDraft) => void;
 }
 
 /**
@@ -43,6 +52,7 @@ const FlashCards: React.FC<FlashCardsProps> = ({
   deckName = sampleDeckName,
   onProgressChange,
   onBack,
+  onAddCard,
 }) => {
   const {
     currentCard, position, total, isFlipped, isComplete,
@@ -55,6 +65,15 @@ const FlashCards: React.FC<FlashCardsProps> = ({
     reportedProgress.current = progressDraft;
     onProgressChange?.(progressDraft);
   }, [progressDraft, onProgressChange]);
+
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const addBtnRef = useRef<HTMLButtonElement>(null);
+  const wasAddOpen = useRef(false);
+  useEffect(() => {
+    // Return focus to the "+" once the sheet closes (it is inert while open).
+    if (wasAddOpen.current && !isAddOpen) addBtnRef.current?.focus();
+    wasAddOpen.current = isAddOpen;
+  }, [isAddOpen]);
 
   const renderBody = () => {
     if (currentCard) {
@@ -104,7 +123,8 @@ const FlashCards: React.FC<FlashCardsProps> = ({
   return (
     <>
       <GlobalStyle />
-      <AppShell>
+      {/* inert: while the add-word sheet is open, nothing behind it is focusable or tappable. */}
+      <AppShell inert={isAddOpen}>
           <TopBarRow>
             {onBack ? (
               <TitleGroup>
@@ -114,11 +134,27 @@ const FlashCards: React.FC<FlashCardsProps> = ({
             ) : (
               <AppTitle>{deckName}</AppTitle>
             )}
-            {currentCard && <Progress>{position} of {total}</Progress>}
+            <HeaderEnd>
+              {currentCard && <Progress>{position} of {total}</Progress>}
+              {onAddCard && (
+                <AddWordBtn
+                  ref={addBtnRef}
+                  type="button"
+                  aria-label="Add word"
+                  aria-haspopup="dialog"
+                  onClick={() => setIsAddOpen(true)}
+                >
+                  +
+                </AddWordBtn>
+              )}
+            </HeaderEnd>
           </TopBarRow>
 
         {renderBody()}
       </AppShell>
+      {onAddCard && isAddOpen && (
+        <AddWordSheet onAdd={onAddCard} onClose={() => setIsAddOpen(false)} />
+      )}
     </>
   );
 };
