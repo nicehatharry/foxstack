@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import { GlobalStyle } from './GlobalStyle';
 import { FlipCard } from './FlipCard';
@@ -9,6 +9,7 @@ import type { Flashcard, ProgressDocument } from './FlashCards.types';
 
 import { AppShell } from './styles/layout';
 import { TopBar, TopBarRow, AppTitle, Progress } from './styles/header';
+import { BackBtn, TitleGroup } from './styles/decks';
 import { Actions, PrimaryBtn, RevealBtn, EmptyState } from './styles/actions';
 import { SummaryState, SummaryTitle, SummaryText } from './styles/summary';
 
@@ -19,6 +20,14 @@ export interface FlashCardsProps {
   progress?: ProgressDocument;
   /** Title shown in the header. */
   deckName?: string;
+  /**
+   * Called with the updated progress each time it changes (i.e. on a card's
+   * first grade of the session). Never called on mount. The owner of the deck
+   * stores it and passes it back as `progress` on the next mount.
+   */
+  onProgressChange?: (progress: ProgressDocument) => void;
+  /** When provided, a back button is shown in the header. */
+  onBack?: () => void;
 }
 
 /**
@@ -32,12 +41,20 @@ const FlashCards: React.FC<FlashCardsProps> = ({
   wordBank = sampleDeck,
   progress = sampleProgress,
   deckName = sampleDeckName,
+  onProgressChange,
+  onBack,
 }) => {
   const {
     currentCard, position, total, isFlipped, isComplete,
-    gotCount, missedCount, reveal, grade, restart,
+    gotCount, missedCount, reveal, grade, restart, progressDraft,
   } = useStudySession(wordBank, progress);
-  console.log(wordBank)
+
+  const reportedProgress = useRef(progressDraft);
+  useEffect(() => {
+    if (reportedProgress.current === progressDraft) return;
+    reportedProgress.current = progressDraft;
+    onProgressChange?.(progressDraft);
+  }, [progressDraft, onProgressChange]);
 
   const renderBody = () => {
     if (currentCard) {
@@ -88,12 +105,18 @@ const FlashCards: React.FC<FlashCardsProps> = ({
     <>
       <GlobalStyle />
       <AppShell>
-        <TopBar>
           <TopBarRow>
-            <AppTitle>{deckName}</AppTitle>
+            {onBack ? (
+              <TitleGroup>
+                <BackBtn type="button" aria-label="Back to decks" onClick={onBack}>‹ Decks</BackBtn>
+                <AppTitle>{deckName}</AppTitle>
+              </TitleGroup>
+            ) : (
+              <AppTitle>{deckName}</AppTitle>
+            )}
             {currentCard && <Progress>{position} of {total}</Progress>}
           </TopBarRow>
-        </TopBar>
+
         {renderBody()}
       </AppShell>
     </>

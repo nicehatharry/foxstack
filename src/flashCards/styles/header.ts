@@ -2,7 +2,6 @@ import styled from 'styled-components';
 import { colors } from './tokens';
 
 export const TopBar = styled.header`
-  padding: 8px 4px 16px;
 `;
 
 export const TopBarRow = styled.div`

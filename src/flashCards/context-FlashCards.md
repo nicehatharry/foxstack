@@ -1,13 +1,13 @@
 # FlashCards — working context
 
-Read this before touching code; check claims against the code before large changes. Last reviewed 2026-09-25 (six passes: full read + executed tests; decisions applied and a test suite added; test suite hardened against the host's actual toolchain; word-forms feature added; verb table changed to a two-column layout; common-gender "der/die" nouns given a split answer background). **[verified]** = confirmed by running code, either the test suite (§9) or a one-off check; untagged claims come from reading.
+Read this before touching code; check claims against the code before large changes. Ask for any files that will facilitate the best work. Think like a senior software engineer. Always favor brevitiy and minimal edits to this document.
 
 ## 1. Snapshot
 
 Single-page German→English vocabulary flashcards (Anki-style), mobile-first (iPhone 15, 393×852 CSS px). Shares conventions with sibling sites: styled-components with `$transient` props, co-located `styles/`, pure utils, `animations.ts`, barrel `index.ts`, and a `tests/` subfolder. **Sibling sites' source is not in this folder** — mentions of `s3Storage.ts` / `historyStore.ts` point at files the user would need to re-upload.
 
-**Done:** prompt → tap-to-flip → in-card Got it / Missed it; Leitner scheduling with calendar-day due dates; session composition (cap, new-word throttling, interleaving); in-session requeue of misses; an answer-side forms panel (noun plural/genitive, verb conjugation, adjective comparison — tap the German word to open it); gender-informed styling for nouns vs other word forms; 132-test suite.
-**Not done:** any persistence. No S3 read/write, no auth wrapper. `progressDraft` lives in hook state and is lost on reload. Data comes from `sampleDeck.ts` and `sampleProgress.ts`.
+**Done:** deck picker on load + create-deck + separate progress per deck (`FlashCardsApp`, §4); prompt → tap-to-flip → in-card Got it / Missed it; Leitner scheduling with calendar-day due dates; session composition (cap, new-word throttling, interleaving); in-session requeue of misses; an answer-side forms panel (noun plural/genitive, verb conjugation, adjective comparison — tap the German word to open it); gender-informed styling for nouns vs other word forms; 132-test suite.
+**Not done:** any persistence (decks created in the app, and every deck's progress, live in `useDeckLibrary` state and are lost on reload; `onLibraryChange` is the seam for the future loader). No S3 read/write, no auth wrapper. `progressDraft` lives in hook state and is lost on reload. Data comes from `sampleDeck.ts` and `sampleProgress.ts`.
 
 **Folder name is `flashCards`** Match camel casing. The parent path (`src/…`) isn't in the upload.
 
@@ -54,7 +54,12 @@ Single-page German→English vocabulary flashcards (Anki-style), mobile-first (i
 | Card entrance animation | `animations.ts` → `cardIn`, applied on `Scene` |
 | Page shell / safe areas | `styles/layout.ts`; global reset + font imports in `GlobalStyle.ts` |
 | Placeholder data | `sampleDeck.ts`, `sampleProgress.ts` — used only as the *default* props of `FlashCards`; replace with S3 loaders |
-| What deck/progress/title the page shows | `FlashCards.tsx` props: `wordBank`, `progress`, `deckName` (all optional) |
+| What deck/progress/title the page shows | `FlashCards.tsx` props: `wordBank`, `progress`, `deckName`, `onProgressChange`, `onBack` (all optional) |
+| Which screen shows (picker / create / study) | `FlashCardsApp.tsx` (`View` state); `<FlashCards key={deck.id}>` remounts per deck |
+| All decks + per-deck progress (add deck, save progress, change callback) | `useDeckLibrary.ts`; pure helpers in `decks.ts` (`createDeck`, `withProgress`, `formatDeckMeta`, `draftToCard`) |
+| Deck list screen | `DeckPicker.tsx` |
+| Create-deck form (name + cards; part-of-speech / article options) | `DeckCreator.tsx`; options in `decks.ts` (`PART_OF_SPEECH_OPTIONS`, `ARTICLE_OPTIONS`) |
+| Styles for picker / creator / back button | `styles/decks.ts` |
 | Progress data shapes | `FlashCards.types.ts` (`WordProgress`, `ProgressMap`, `SessionMeta`, `ProgressDocument`) |
 | Tests (all under `tests/`, importing source via `../`) | `srs.test.ts` (scheduling) · `useStudySession.test.tsx` (hook) · `FlashCards.utils.test.ts` (pure helpers) · `WordForms.test.tsx` (forms panel, all parts of speech) · `CardAnswer.test.tsx` (toggle wiring) · `FlashCards.test.tsx` (page, real sample data) · `FlashCards.states.test.tsx` (page, data via props) |
 
@@ -63,6 +68,11 @@ Single-page German→English vocabulary flashcards (Anki-style), mobile-first (i
 ```
 flashCards/
 ├── index.ts                barrel
+├── FlashCardsApp.tsx       container: DeckPicker ⇄ DeckCreator ⇄ <FlashCards key={deckId}>; props { initialDecks?, onLibraryChange? }
+├── DeckPicker.tsx          deck list + "New deck"
+├── DeckCreator.tsx         name + add cards (no `forms`); needs ≥ 1 card
+├── useDeckLibrary.ts       decks state (read once at mount), addDeck, saveProgress, onChange seam
+├── decks.ts                pure: DeckRecord, CardDraft, createDeck, withProgress, formatDeckMeta, emptyProgress
 ├── FlashCards.tsx          page + props { wordBank?, progress?, deckName? }: header, FlipCard, RevealBtn, summary, empty states
 ├── FlipCard.tsx            Scene > Flipper > CardFront/CardBack; tap = reveal
 ├── CardPrompt.tsx          front: part-of-speech pill + bare German lemma
@@ -174,7 +184,7 @@ Note on `isDue`'s `lastSessionId` clause: with a fresh session id at build time 
 
 ## 7. Persistence design (planned, not built)
 
-Two S3 documents, mirroring GroceryList's content/state split:
+Two S3 documents, mirroring GroceryList's content/state split. **With multiple decks (Review 7) each deck gets its own pair**, e.g. `vocabulary/<deckId>/words.json` + `vocabulary/<deckId>/progress.json`, plus a small index of `{ id, name }`. Not decided or built; the in-app seam is `onLibraryChange` / `initialDecks`. Shapes below are per deck:
 
 **`vocabulary/words.json`** — word bank; rarely changes. Keys are synthetic ids (`c01`, …). `article` may also be `"der/die"` for a common-gender noun (§6). `forms` is optional per FlashCards.types.ts and per-word — omit it entirely for a card whose forms haven't been authored yet (see §6: that reads identically to "this word genuinely has none", a known gap).
 ```json
@@ -287,6 +297,8 @@ Also confirmed with the user: adding props to `FlashCards` doesn't require any d
 **Decided by the user (2026-09-25):** the Präsens/Präteritum verb tables display as two columns, singular paired with its plural counterpart (ich/wir, du/ihr, er,sie,es/sie,Sie), instead of one column of six rows — "to better use space." ✔ implemented (`PersonTable` in `WordForms.tsx`); see §6 for the readability guards this required and §9 for how they were verified.
 
 **Decided by the user (2026-09-25, later):** words that take the gender of the person they refer to get a split blue/red background on the answer side. ✔ implemented as `article: 'der/die'` → `'commonGender'` tone (§6). The user specified only the *what* (split blue/red); the *how* — hard 50/50 stop, blue on the left, no backing panel, genitive shown as "des/der", sample card `c11` — was decided in implementation and is recorded in §6 for easy reversal.
+
+**Decided by the user (2026-10-05):** add (1) a deck picker on load, (2) the ability to create a new deck, (3) separate progress per deck. ✔ implemented (unverified, see Review 7). Decided in implementation, easy to reverse: a deck must have ≥ 1 card to be created (there is no add-cards-to-existing-deck yet); new-deck cards carry no `forms`; the picker always shows, even with a single deck; leaving a deck mid-session keeps whatever was graded; ids are `d_<Date.now()>`.
 
 **Change log:**
 - *Review 1:* added pure `applyGrade` (first-grade-per-session); `useStudySession` routes grades through it inside the state updater (no stale closure), stable `isLockedOut`, lazy `useState` for `sessionId`/`startedAt`; `FlashCards.tsx` uses a composite FlipCard key, `isComplete`, and the same `wordBank` it passes to the hook; corrected the `FlipCard` key comment. Doc drift fixed: stale "missed cards aren't re-queued" gap removed; wrong `isDue`/`lastSessionId` rationale corrected; read-once inputs documented; example `dueAt` corrected.
