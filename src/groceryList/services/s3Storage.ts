@@ -39,7 +39,7 @@
 import { S3Client, GetObjectCommand, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { fromCognitoIdentityPool } from '@aws-sdk/credential-provider-cognito-identity';
 import { fetchAuthSession } from 'aws-amplify/auth';
-import { awsConfig } from '../config/aws';
+import { awsConfig } from '../../config/aws';
 
 // ---------------------------------------------------------------------------
 // Types

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { ChangeEvent, SubmitEvent, KeyboardEvent } from 'react';
 import type { ItemData, GroceryItem } from './GroceryList.types';
-import type { ItemHistory } from '../services/s3Storage';
+import type { ItemHistory } from './services/s3Storage';
 import { getHistory, setHistory as persistHistory, historyKey } from './historyStore';
 
 const EMPTY_FORM: ItemData = { item: '', store: [], department: 'Produce', quantity: '1', acquired: false, notes: '' };

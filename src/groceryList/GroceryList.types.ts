@@ -6,7 +6,7 @@
 // useGrocerySync.ts's function imports) that needs to know the real
 // relative path to `services/s3Storage` — if this folder ever moves,
 // fix the path below and everything else still works.
-import type { GroceryItem, SyncStatus } from '../services/s3Storage';
+import type { GroceryItem, SyncStatus } from './services/s3Storage';
 export type { GroceryItem, SyncStatus };
 
 /**

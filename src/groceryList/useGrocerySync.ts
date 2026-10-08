@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 // This is a real (function) import, not just types, so it must point at
 // the actual service module — unlike every other file in this folder,
 // which gets its types from the local GroceryList.types.ts instead.
-import { loadList, saveList, getRemoteEtag } from '../services/s3Storage';
+import { loadList, saveList, getRemoteEtag } from './services/s3Storage';
 import type { GroceryItem, SyncStatus } from './GroceryList.types';
 import { POLL_INTERVAL_MS, SAVE_DEBOUNCE_MS } from './GroceryList.constants';
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ChangeEvent, SubmitEvent } from 'react';
-import type { ItemHistory, HistoryEntry } from '../services/s3Storage';
+import type { ItemHistory, HistoryEntry } from './services/s3Storage';
 import { getHistory, getCachedHistory, setHistory as persistHistory, historyKey } from './historyStore';
 
 /** One history entry with its map key and a reconstructed display name attached. */

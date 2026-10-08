@@ -1,4 +1,4 @@
-import { STORE_OPTIONS } from '../services/s3Storage';
+import { STORE_OPTIONS } from './services/s3Storage';
 
 /**
  * Department options — drives BOTH the department filter pills in the

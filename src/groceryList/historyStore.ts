@@ -13,8 +13,8 @@
  * sheet opens, with no page reload, because getHistory() below returns
  * the same mutated cache rather than a stale copy.
  */
-import { loadHistory, saveHistory } from '../services/s3Storage';
-import type { ItemHistory } from '../services/s3Storage';
+import { loadHistory, saveHistory } from './services/s3Storage';
+import type { ItemHistory } from './services/s3Storage';
 
 let historyCache: ItemHistory | null = null;
 let historyLoadPromise: Promise<ItemHistory> | null = null;
