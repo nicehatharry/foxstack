@@ -157,7 +157,9 @@ describe('FlashCardsApp: adding a word to an existing deck', () => {
     fillAndAdd('Hund', 'dog');
     fireEvent.click(screen.getByText('Done'));
 
-    const saved = onLibraryChange.mock.calls.at(-1)![0] as DeckRecord[];
+    const saved = onLibraryChange.mock.calls.length
+      ? (onLibraryChange.mock.calls[onLibraryChange.mock.calls.length - 1][0] as DeckRecord[])
+      : [];
     expect(saved[0].wordBank.map(c => c.id)).toEqual(['x1', 'c02']);
     expect(screen.getByText(/^1 of 1$/)).toBeTruthy();
 
