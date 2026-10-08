@@ -1,12 +1,12 @@
 import { lazy, Suspense } from 'react'
 import { Homepage } from './homepage'
 import { Route, Switch } from "wouter"
-import { FlashCardsApp } from './flashCards'
 
 // GroceryList's module graph pulls in config/amplify → config/aws
 const GroceryList = lazy(() => import('./groceryList/GroceryList'))
 const ManageItems = lazy(() => import('./groceryList/ManageItems'))
 const Notetaker = lazy(() => import('./notetaker/Notetaker'))
+const FlashCardsApp = lazy(() => import('./flashCards/FlashCardsApp'))
 
 const App = () => (
   <>
