@@ -29,6 +29,13 @@ export interface FlashCardsProps {
    * stores it and passes it back as `progress` on the next mount.
    */
   onProgressChange?: (progress: ProgressDocument) => void;
+  /**
+   * Fires each time the session reaches its summary (queue worked through),
+   * including after a "Study again" replay. In the same effect pass as the
+   * final `onProgressChange`, so an owner that persists should defer its write
+   * until after its own re-render (see FlashCardsApp's checkpoint).
+   */
+  onSessionComplete?: () => void;
   /** When provided, a back button is shown in the header. */
   onBack?: () => void;
   /**
@@ -42,15 +49,16 @@ export interface FlashCardsProps {
 /**
  * Inputs are read ONCE, at mount (see useStudySession) — changing the props
  * later does nothing. To load a different deck, remount with a new `key`.
- * Defaults are the sample data until the S3-backed loader exists (words.json +
- * progress.json; see context-FlashCards.md). Tests pass their own data through
- * these props instead of mocking the sample modules.
+ * Defaults are the sample data; the S3-backed library is loaded by
+ * FlashCardsRoot and arrives through FlashCardsApp. Tests pass their own data
+ * through these props instead of mocking the sample modules.
  */
 const FlashCards: React.FC<FlashCardsProps> = ({
   wordBank = sampleDeck,
   progress = sampleProgress,
   deckName = sampleDeckName,
   onProgressChange,
+  onSessionComplete,
   onBack,
   onAddCard,
 }) => {
@@ -65,6 +73,12 @@ const FlashCards: React.FC<FlashCardsProps> = ({
     reportedProgress.current = progressDraft;
     onProgressChange?.(progressDraft);
   }, [progressDraft, onProgressChange]);
+
+  const wasComplete = useRef(false);
+  useEffect(() => {
+    if (isComplete && !wasComplete.current) onSessionComplete?.();
+    wasComplete.current = isComplete;
+  }, [isComplete, onSessionComplete]);
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);

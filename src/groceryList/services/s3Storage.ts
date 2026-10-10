@@ -150,7 +150,7 @@ async function getS3Client(): Promise<S3Client> {
   return cachedClient;
 }
 
-const { bucket, key } = awsConfig.s3;
+const { bucket, groceryStoreKey: key } = awsConfig.s3;
 
 // History lives alongside the main list in the same S3 prefix.
 const historyKey = 'grocery-lists/history.json';

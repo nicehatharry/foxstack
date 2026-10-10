@@ -34,6 +34,7 @@ export const awsConfig = {
   identityPoolId:   requireEnv('VITE_IDENTITY_POOL_ID'),
   s3: {
     bucket: requireEnv('VITE_S3_BUCKET'),          // "foxstack"
-    key:    'grocery-lists/list.json',       // one shared document for all users
+    groceryStoreKey:    'grocery-lists/list.json',       // shared GroceryList data
+    flashCardsKey: 'flashcards/library.json', // single-user FlashCards library
   },
 } as const;
