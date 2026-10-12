@@ -8,6 +8,7 @@ import { useDeckLibrary } from './useDeckLibrary';
 import { sampleDeck, sampleDeckName } from './sampleDeck';
 import { sampleProgress } from './sampleProgress';
 import type { DeckRecord } from './decks';
+import type { CompletedSession } from './FlashCards.types';
 
 export interface FlashCardsAppProps {
   /** Decks to offer on load. Read ONCE at mount. Defaults to the sample deck. */
@@ -34,6 +35,9 @@ type View = { kind: 'picker' } | { kind: 'create' } | { kind: 'study'; deckId: s
  * its progress is saved back into the library on every graded card, so leaving a
  * deck mid-session keeps what was graded, and reopening resumes from it.
  *
+ * Replay: the last finished session per deck is kept in a ref (memory only,
+ * lost on reload) and handed back as `lastSession` when the deck is reopened.
+ *
  * Checkpoints: an action bumps `checkpointTick` in the same batch as its library
  * change; the effect below is declared AFTER useDeckLibrary's, so on the
  * resulting render `onLibraryChange` has already reported the new library when
@@ -46,6 +50,7 @@ const FlashCardsApp: React.FC<FlashCardsAppProps> = ({
 }) => {
   const { decks, addDeck, addCard, saveProgress } = useDeckLibrary(initialDecks, onLibraryChange);
   const [view, setView] = useState<View>({ kind: 'picker' });
+  const lastSessions = useRef(new Map<string, CompletedSession>());
 
   const [checkpointTick, setCheckpointTick] = useState(0);
   const requestCheckpoint = useCallback(() => setCheckpointTick((t) => t + 1), []);
@@ -82,7 +87,11 @@ const FlashCardsApp: React.FC<FlashCardsAppProps> = ({
             progress={deck.progress}
             deckName={deck.name}
             onProgressChange={(next) => saveProgress(deck.id, next)}
-            onSessionComplete={requestCheckpoint}
+            lastSession={lastSessions.current.get(deck.id)}
+            onSessionComplete={(session) => {
+              lastSessions.current.set(deck.id, session);
+              requestCheckpoint();
+            }}
             onBack={() => {
               requestCheckpoint();
               toPicker();

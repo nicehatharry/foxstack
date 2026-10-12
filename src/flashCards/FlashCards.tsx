@@ -5,7 +5,7 @@ import { FlipCard } from './FlipCard';
 import { useStudySession } from './useStudySession';
 import { sampleDeck, sampleDeckName } from './sampleDeck';
 import { sampleProgress } from './sampleProgress';
-import type { Flashcard, ProgressDocument } from './FlashCards.types';
+import type { CompletedSession, Flashcard, ProgressDocument } from './FlashCards.types';
 import type { CardDraft } from './decks';
 import { AddWordSheet } from './AddWordSheet';
 
@@ -13,7 +13,7 @@ import { AppShell } from './styles/layout';
 import { TopBarRow, AppTitle, Progress } from './styles/header';
 import { HeaderEnd, AddWordBtn } from './styles/addWord';
 import { BackBtn, TitleGroup } from './styles/decks';
-import { Actions, PrimaryBtn, RevealBtn, EmptyState } from './styles/actions';
+import { Actions, ActionStack, PrimaryBtn, SecondaryBtn, RevealBtn, EmptyState } from './styles/actions';
 import { SummaryState, SummaryTitle, SummaryText } from './styles/summary';
 
 export interface FlashCardsProps {
@@ -33,9 +33,16 @@ export interface FlashCardsProps {
    * Fires each time the session reaches its summary (queue worked through),
    * including after a "Study again" replay. In the same effect pass as the
    * final `onProgressChange`, so an owner that persists should defer its write
-   * until after its own re-render (see FlashCardsApp's checkpoint).
+   * until after its own re-render (see FlashCardsApp's checkpoint). Receives
+   * the finished session (id + card ids) so the owner can offer a replay later.
    */
-  onSessionComplete?: () => void;
+  onSessionComplete?: (session: CompletedSession) => void;
+  /**
+   * The owner's record of the previous finished session. When present and its
+   * cards are still in `wordBank`, the "Nothing due" state offers "Replay
+   * Session". Read once at mount. In-memory only; never persisted.
+   */
+  lastSession?: CompletedSession;
   /** When provided, a back button is shown in the header. */
   onBack?: () => void;
   /**
@@ -59,13 +66,15 @@ const FlashCards: React.FC<FlashCardsProps> = ({
   deckName = sampleDeckName,
   onProgressChange,
   onSessionComplete,
+  lastSession,
   onBack,
   onAddCard,
 }) => {
   const {
     currentCard, position, total, isFlipped, isComplete,
-    gotCount, missedCount, reveal, grade, restart, progressDraft,
-  } = useStudySession(wordBank, progress);
+    gotCount, missedCount, reveal, grade, progressDraft,
+    currentSession, canReplay, replaySession, newSession,
+  } = useStudySession(wordBank, progress, lastSession);
 
   const reportedProgress = useRef(progressDraft);
   useEffect(() => {
@@ -76,9 +85,9 @@ const FlashCards: React.FC<FlashCardsProps> = ({
 
   const wasComplete = useRef(false);
   useEffect(() => {
-    if (isComplete && !wasComplete.current) onSessionComplete?.();
+    if (isComplete && !wasComplete.current) onSessionComplete?.(currentSession);
     wasComplete.current = isComplete;
-  }, [isComplete, onSessionComplete]);
+  }, [isComplete, currentSession, onSessionComplete]);
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
@@ -88,6 +97,16 @@ const FlashCards: React.FC<FlashCardsProps> = ({
     if (wasAddOpen.current && !isAddOpen) addBtnRef.current?.focus();
     wasAddOpen.current = isAddOpen;
   }, [isAddOpen]);
+
+  /** "Study again" (same cards, new order; hidden if there are none) + "New Session". Shared by the summary and "Nothing due". */
+  const renderSessionOptions = () => (
+    <ActionStack>
+      {canReplay && (
+        <SecondaryBtn type="button" onClick={replaySession}>Study again</SecondaryBtn>
+      )}
+      <PrimaryBtn type="button" onClick={newSession}>New Session</PrimaryBtn>
+    </ActionStack>
+  );
 
   const renderBody = () => {
     if (currentCard) {
@@ -119,9 +138,7 @@ const FlashCards: React.FC<FlashCardsProps> = ({
             <SummaryTitle>Session complete</SummaryTitle>
             <SummaryText>got {gotCount}, missed {missedCount}</SummaryText>
           </SummaryState>
-          <Actions>
-            <PrimaryBtn type="button" onClick={restart}>Study again</PrimaryBtn>
-          </Actions>
+          {renderSessionOptions()}
         </>
       );
     }
@@ -131,7 +148,12 @@ const FlashCards: React.FC<FlashCardsProps> = ({
     }
 
     // Word bank has cards, but nothing is due and no new words are queued.
-    return <EmptyState>Nothing due right now — check back later.</EmptyState>;
+    return (
+      <>
+        <EmptyState>Nothing due right now — check back later.</EmptyState>
+        {renderSessionOptions()}
+      </>
+    );
   };
 
   return (

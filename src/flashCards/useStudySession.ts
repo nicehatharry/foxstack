@@ -1,7 +1,7 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ACTION_LOCKOUT_MS, MISSED_REQUEUE_GAP, SESSION_CARD_CAP } from './FlashCards.constants';
-import { applyGrade, buildSessionQueue } from './srs';
-import type { Flashcard, Grade, ProgressDocument } from './FlashCards.types';
+import { applyGrade, buildSessionQueue, buildStudyAheadQueue, shuffle } from './srs';
+import type { CompletedSession, Flashcard, Grade, ProgressDocument } from './FlashCards.types';
 
 export interface StudySession {
   currentCard: Flashcard | null;
@@ -23,6 +23,22 @@ export interface StudySession {
    * per session schedules it).
    */
   restart: () => void;
+  /** The session now running (or just finished): its id and initial card ids. Stable until a new session starts. */
+  currentSession: CompletedSession;
+  /** True if `replaySession` has cards to run: the session just finished, or a previous session's cards still in the word bank. */
+  canReplay: boolean;
+  /**
+   * "Study again": runs a session's cards again in a new random order, under
+   * that session's id — pure practice. Source: this session if it just
+   * finished, else the previous session handed in as `lastSession`.
+   * No-op if `!canReplay`.
+   */
+  replaySession: () => void;
+  /**
+   * Starts a fresh session that ignores due dates (see buildStudyAheadQueue).
+   * Graded as a normal session under a new id.
+   */
+  newSession: () => void;
   /**
    * Word progress + rolling success rate, updated on each card's first grade
    * of the session. This is what a caller would write back to `progress.json`
@@ -38,14 +54,29 @@ export interface StudySession {
  * S3 loading of `words.json`/`progress.json` and saving `progressDraft` back
  * will plug in.
  */
-export function useStudySession(wordBank: Flashcard[], initialProgress: ProgressDocument): StudySession {
+export function useStudySession(
+  wordBank: Flashcard[],
+  initialProgress: ProgressDocument,
+  lastSession?: CompletedSession,
+): StudySession {
   // Lazy initialisers: created once, not re-evaluated on every render.
-  const [sessionId] = useState(() => `s_${Date.now()}`);
-  const [startedAt] = useState(() => new Date());
-
-  const [initialQueue] = useState<Flashcard[]>(() => buildSessionQueue(
-    wordBank, initialProgress.words, initialProgress.meta, startedAt, sessionId, SESSION_CARD_CAP,
-  ));
+  const [session, setSession] = useState<{ id: string; queue: Flashcard[] }>(() => {
+    const now = new Date();
+    const id = `s_${now.getTime()}`;
+    return {
+      id,
+      queue: buildSessionQueue(
+        wordBank, initialProgress.words, initialProgress.meta, now, id, SESSION_CARD_CAP,
+      ),
+    };
+  });
+  const { id: sessionId, queue: initialQueue } = session;
+  // Read once at mount, like the rest of the inputs.
+  const [replayCards] = useState<Flashcard[]>(() => {
+    if (!lastSession) return [];
+    const ids = new Set(lastSession.cardIds);
+    return wordBank.filter(c => ids.has(c.id));
+  });
   const [liveQueue, setLiveQueue] = useState<Flashcard[]>(initialQueue);
   const [index, setIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -96,16 +127,41 @@ export function useStudySession(wordBank: Flashcard[], initialProgress: Progress
     setIsFlipped(false);
   }, [currentCard, isFlipped, index, sessionId, isLockedOut]);
 
-  const restart = useCallback(() => {
+  const resetRun = useCallback((queue: Flashcard[]) => {
     lastActionAt.current = Date.now();
-    setLiveQueue(initialQueue);
+    setLiveQueue(queue);
     setIndex(0);
     setIsFlipped(false);
     setGotCount(0);
     setMissedCount(0);
-    // progressDraft is intentionally left alone: replayed cards already carry
-    // this session's id, so applyGrade ignores their grades.
-  }, [initialQueue]);
+  }, []);
+
+  // progressDraft is intentionally left alone: replayed cards already carry
+  // this session's id, so applyGrade ignores their grades.
+  const restart = useCallback(() => resetRun(initialQueue), [resetRun, initialQueue]);
+
+  const replaySession = useCallback(() => {
+    const cards = isComplete ? initialQueue : replayCards;
+    const id = isComplete ? sessionId : lastSession?.sessionId;
+    if (!id || cards.length === 0) return;
+    // Reuse the old id: those cards already carry it, so grades are ignored (pure practice).
+    const queue = shuffle(cards);
+    setSession({ id, queue });
+    resetRun(queue);
+  }, [isComplete, initialQueue, sessionId, lastSession, replayCards, resetRun]);
+
+  const newSession = useCallback(() => {
+    const now = new Date();
+    const id = `s_${now.getTime()}`;
+    const queue = buildStudyAheadQueue(wordBank, progressDraft.words, id, SESSION_CARD_CAP);
+    setSession({ id, queue });
+    resetRun(queue);
+  }, [wordBank, progressDraft, resetRun]);
+
+  const currentSession = useMemo<CompletedSession>(
+    () => ({ sessionId, cardIds: initialQueue.map(c => c.id) }),
+    [sessionId, initialQueue],
+  );
 
   return {
     currentCard,
@@ -118,6 +174,10 @@ export function useStudySession(wordBank: Flashcard[], initialProgress: Progress
     reveal,
     grade,
     restart,
+    currentSession,
+    canReplay: isComplete || replayCards.length > 0,
+    replaySession,
+    newSession,
     progressDraft,
   };
 }

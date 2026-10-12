@@ -153,6 +153,38 @@ export function interleaveEvenly<T>(base: T[], toInsert: T[]): T[] {
   return result;
 }
 
+/** Fisher–Yates; returns a new array. `random` is injectable for tests. */
+export function shuffle<T>(items: readonly T[], random: () => number = Math.random): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+/**
+ * Queue for an extra session when nothing is due ("New Session"): ignores due
+ * dates and studies ahead — never-graded words first, then the words closest to
+ * being due — up to `cap`, shuffled. Words already graded under `sessionId` are
+ * excluded. Unlike a replay, these are graded as a normal session.
+ */
+export function buildStudyAheadQueue(
+  wordBank: Flashcard[],
+  progress: ProgressMap,
+  sessionId: string,
+  cap: number,
+  random: () => number = Math.random,
+): Flashcard[] {
+  const dueTime = (w: Flashcard) => new Date(progress[w.id].dueAt).getTime();
+  const unseen = wordBank.filter(w => !progress[w.id]);
+  const seen = wordBank
+    .filter(w => progress[w.id] && progress[w.id].lastSessionId !== sessionId)
+    .sort((a, b) => dueTime(a) - dueTime(b));
+
+  return shuffle([...unseen, ...seen].slice(0, cap), random);
+}
+
 /**
  * Builds one session's queue from the full word bank: due reviews (most
  * overdue first) up to the cap, then whatever slots remain filled with new

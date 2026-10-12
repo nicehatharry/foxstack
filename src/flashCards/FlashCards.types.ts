@@ -180,6 +180,17 @@ export interface SessionMeta {
   totalReviews: number;
 }
 
+/**
+ * A finished study session, kept IN MEMORY only (FlashCardsApp, per deck) so the
+ * "Nothing due" state can offer "Study again". Never persisted to S3.
+ * `sessionId` is the session's own id, so a replay can reuse it and stay pure
+ * practice (applyGrade ignores cards already graded under it).
+ */
+export interface CompletedSession {
+  sessionId: string;
+  cardIds: string[];
+}
+
 /** The full S3 `progress.json` shape: one meta block + one entry per studied word. */
 export interface ProgressDocument {
   meta: SessionMeta;

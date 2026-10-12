@@ -30,26 +30,27 @@ config/
 flashCards/
 ├── index.ts                barrel
 ├── FlashCardsRoot.tsx      auth + persistence shell, default export withAuthenticator. Imports config/amplify FIRST. LibraryLoader (loadLibrary; loading / error+Retry; retry = remount via key) → SyncedApp (useLibrarySync + <FlashCardsApp>; save-error SyncBanner). Only UI file that touches AWS.
-├── FlashCardsApp.tsx       container: DeckPicker ⇄ DeckCreator ⇄ <FlashCards key={deckId}>; props { initialDecks?, onLibraryChange?, onCheckpoint? }; AWS-free
+├── FlashCardsApp.tsx       container: DeckPicker ⇄ DeckCreator ⇄ <FlashCards key={deckId}>; props { initialDecks?, onLibraryChange?, onCheckpoint? }; AWS-free; keeps last CompletedSession per deck in a ref (memory only) → FlashCards `lastSession`
 ├── DeckPicker.tsx          deck list + "New deck"
 ├── DeckCreator.tsx         name + add cards (no `forms`); needs ≥ 1 card
 ├── AddWordSheet.tsx        add-word bottom sheet, opened from the FlashCards header "+"; props { onAdd, onClose }
 ├── useDeckLibrary.ts       decks state (read once at mount), addDeck, addCard, saveProgress, onChange seam
 ├── useLibrarySync.ts       persistence policy: onLibraryChange (record + mark dirty, never writes), flush(unloading?), status 'idle'|'unsaved'|'saving'|'error'; takes a stable save fn
 ├── decks.ts                pure: DeckRecord, CardDraft, createDeck, withProgress, withCard, draftToCard, describeDraft, formatDeckMeta, emptyProgress
-├── FlashCards.tsx          page + props { wordBank?, progress?, deckName?, onProgressChange?, onSessionComplete?, onBack?, onAddCard? }: header, FlipCard, RevealBtn, summary, empty states
+├── FlashCards.tsx          page + props { wordBank?, progress?, deckName?, onProgressChange?, onSessionComplete?(CompletedSession), lastSession?, onBack?, onAddCard? }: header, FlipCard, RevealBtn, summary, empty states. "Session complete" and "Nothing due" states: [Study again (only if replayable)] + New Session
 ├── FlipCard.tsx            Scene > Flipper > CardFront/CardBack; tap = reveal
 ├── CardPrompt.tsx          front: part-of-speech pill + bare German lemma
 ├── CardAnswer.tsx          back: pill, German (+article, tappable if hasForms), translation ⇄ WordForms, Missed it / Got it
 ├── WordForms.tsx           answer-side forms panel: noun plural/genitive, verb Präsens/Präteritum/Perfekt, adjective comparison
-├── useStudySession.ts      session state: queue, index, isFlipped, counters, progressDraft
+├── useStudySession.ts      (wordBank, progress, lastSession?) session state: session {id, queue}, index, isFlipped, counters, progressDraft; restart, replaySession, newSession, canReplay, currentSession
 ├── srs.ts                  pure: dueDateFor, scheduleNext, updateSuccessRate, applyGrade, isDue,
-│                           computeNewCardBudget, interleaveEvenly, buildSessionQueue
+│                           computeNewCardBudget, interleaveEvenly, buildSessionQueue,
+│                           shuffle, buildStudyAheadQueue
 ├── FlashCards.types.ts     Flashcard = NounCard | VerbCard | AdjectiveCard | AdverbCard | PhraseCard
 │                           (discriminated union on partOfSpeech), NounForms, VerbForms,
 │                           VerbPersonForms, AdjectiveForms, Article, NounArticle (= Article | 'der/die'),
 │                           Grade, AnswerTone, LeitnerBox,
-│                           WordProgress, ProgressMap, SessionMeta, ProgressDocument
+│                           WordProgress, ProgressMap, SessionMeta, CompletedSession (in-memory, not persisted), ProgressDocument
 ├── FlashCards.constants.ts WORD_SIZE_TIERS, FLIP_DURATION_MS, ACTION_LOCKOUT_MS,
 │                           LEITNER_INTERVALS_DAYS, MAX_LEITNER_BOX, SESSION_CARD_CAP,
 │                           MISSED_REQUEUE_GAP, SUCCESS_RATE_SMOOTHING,
@@ -62,8 +63,8 @@ flashCards/
 ├── GlobalStyle.ts          reset + @fontsource imports
 ├── services/s3Storage.ts   loadLibrary(): DeckRecord[] | null (null = key absent); saveLibrary(decks, { unloading? }). Only SDK importer.
 ├── styles/                 actions, addWord, card, decks, forms, header, layout, summary, sync, tokens
-└── tests/                  AddWord, CardAnswer, decks, FlashCards.states, FlashCards, FlashCards.utils, FlashCardsApp,
-                            FlashCardsApp.checkpoint, FlipCard, srs, s3Storage, useLibrarySync, useStudySession, WordForms — import source via `../`
+└── tests/                  AddWord, CardAnswer, decks, FlashCards.states, FlashCards.replay, FlashCards, FlashCards.utils, FlashCardsApp,
+                            FlashCardsApp.checkpoint, FlipCard, srs, srs.session, s3Storage, useLibrarySync, useStudySession, WordForms — import source via `../`
 
 ### Props
 props (default: sampleDeck / sampleProgress / sampleDeckName)
@@ -75,13 +76,18 @@ useStudySession ─▶ buildSessionQueue (ONCE, at mount)
                       │      └─▶ FlashCards.tsx ─▶ FlipCard ─▶ CardPrompt / CardAnswer
                       └─ progressDraft  (srs.applyGrade on each card's FIRST grade per session)
 
+### Sessions
+- Initial session: buildSessionQueue at mount. Queue/id live in one `session` state, so a new session swaps both.
+- `replaySession` ("Study again"): shuffled cards under the OLD sessionId → pure practice (applyGrade ignores). Source: the just-finished session, else `lastSession.cardIds` ∩ wordBank (read once at mount; supplied by FlashCardsApp from memory, so absent after reload → button hidden).
+- `restart` (hook): same queue, same order, same id; no longer used by the UI.
+- Options UI (`renderSessionOptions`): [Study again] + New Session, shown in both the "Session complete" and "Nothing due" states.
+- `newSession` ("New Session"): buildStudyAheadQueue (ignores due dates: never-graded first, then soonest `dueAt`, ≤ SESSION_CARD_CAP, shuffled) under a NEW sessionId → graded normally (boxes advance).
+- `onSessionComplete(currentSession)` fires per completion of any session type.
+
 ### Persistence (S3)
-Single user. One object: s3://foxstack/flashcards/library.json = whole `DeckRecord[]`. No per-user prefix.
-- Read: FlashCardsRoot loads once at mount → `initialDecks` (read-once, context §4). Key absent → `undefined` → FlashCardsApp's default (sample deck); nothing is written until the first change. Any other load failure (network, AccessDenied, malformed shape) → error screen + Retry; NEVER falls back to defaults (the next save would overwrite real data).
+Single user. One object: s3://foxstack/flashcards/library.json = whole `DeckRecord[]`.
+- Read: FlashCardsRoot loads once at mount → `initialDecks`
 - Conflicts: last-write-wins. Plain PUT, no ETag/IfMatch/HEAD/polling. A stale device overwrites a newer one.
 - Seams: `FlashCardsApp.onLibraryChange(decks)` fires after EVERY change incl. each graded card → useLibrarySync records it and marks dirty, never writes. `FlashCardsApp.onCheckpoint()` fires on: deck created, card added, session complete (`FlashCards.onSessionComplete`, again after "Study again"), leaving a deck (`onBack`) → FlashCardsRoot wires it to `flush`.
-- Ordering invariant: a checkpoint is a tick state bumped in the same batch as its change; its effect is declared AFTER useDeckLibrary's, so `onLibraryChange` always reports first. Keep that declaration order.
 - useLibrarySync: writes serialized (one in flight; a flush mid-write queues one follow-up with the newest snapshot). Failed write → stays dirty, status 'error' (SyncBanner + Retry), retried on the next flush trigger. Own triggers: `pagehide`, `visibilitychange`→hidden (both `flush(true)`), `online`, unmount.
-- Unload writes (`unloading: true`): reuse the cached S3 client (skip fetchAuthSession) and a `keepAlive` client if body ≤ 60 KB (browser cap 64 KB). Best-effort only.
-- Known weaknesses (accepted): grades of an abandoned session are lost (kill/crash before completion or leaving the deck); unload flush may not survive teardown (iOS app-switcher kill fires nothing; expired Cognito creds can't refresh mid-unload); whole library rewritten per save; no history/versioning; library not refreshed while open.
-- AWS (done): IAM statement `FlashCardsLibraryReadWrite` (Get/Put on `flashcards/library.json`) on the Identity Pool's authenticated role; existing bucket-wide `s3:ListBucket` makes a missing key return NoSuchKey, not AccessDenied. CORS must allow GET, PUT. No new env vars. Versioning off. `iam-policy.json` mirrors the policy.
+Write on unload (`unloading: true`)

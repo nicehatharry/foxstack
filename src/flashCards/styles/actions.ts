@@ -6,6 +6,13 @@ export const Actions = styled.div`
   padding-top: 4px;
 `;
 
+/** Actions holding several buttons, stacked. */
+export const ActionStack = styled(Actions)`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
 /** Primary action lives at the bottom — the thumb zone on a 6.1" phone. */
 export const PrimaryBtn = styled.button`
   display: block;
