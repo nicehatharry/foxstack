@@ -14,7 +14,11 @@ import { TopBarRow, AppTitle, Progress } from './styles/header';
 import { HeaderEnd, AddWordBtn } from './styles/addWord';
 import { BackBtn, TitleGroup } from './styles/decks';
 import { Actions, ActionStack, PrimaryBtn, SecondaryBtn, RevealBtn, EmptyState } from './styles/actions';
-import { SummaryState, SummaryTitle, SummaryText } from './styles/summary';
+import { SummaryState, SummaryTitle, SummaryText, MissedList } from './styles/summary';
+
+/** Lemma as listed in the summary: nouns with their article ("das Fernweh"), everything else bare. */
+const displayGerman = (card: Flashcard): string =>
+  card.partOfSpeech === 'noun' ? `${card.article} ${card.german}` : card.german;
 
 export interface FlashCardsProps {
   /** Cards to study. Defaults to the placeholder sample deck. */
@@ -72,7 +76,7 @@ const FlashCards: React.FC<FlashCardsProps> = ({
 }) => {
   const {
     currentCard, position, total, isFlipped, isComplete,
-    gotCount, missedCount, reveal, grade, progressDraft,
+    missedCards, reveal, grade, progressDraft,
     currentSession, canReplay, replaySession, newSession,
   } = useStudySession(wordBank, progress, lastSession);
 
@@ -136,7 +140,16 @@ const FlashCards: React.FC<FlashCardsProps> = ({
         <>
           <SummaryState>
             <SummaryTitle>Session complete</SummaryTitle>
-            <SummaryText>got {gotCount}, missed {missedCount}</SummaryText>
+            {missedCards.length > 0 ? (
+              <>
+                <SummaryText>missed:</SummaryText>
+                <MissedList>
+                  {missedCards.map(c => <li key={c.id}>{displayGerman(c)}</li>)}
+                </MissedList>
+              </>
+            ) : (
+              <SummaryText>No words missed.</SummaryText>
+            )}
           </SummaryState>
           {renderSessionOptions()}
         </>

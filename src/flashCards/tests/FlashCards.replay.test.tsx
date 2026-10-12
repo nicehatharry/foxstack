@@ -116,6 +116,21 @@ describe('Session complete options', () => {
     expect(screen.getByText('Session complete')).toBeTruthy();
     expect(screen.getByText('Study again')).toBeTruthy();
     expect(screen.getByText('New Session')).toBeTruthy();
+    expect(screen.getByText('No words missed.')).toBeTruthy();
+  });
+
+  it('lists missed words: nouns with their article, other parts of speech bare', () => {
+    const verb: Flashcard = { id: 'v', german: 'erinnern', english: 'remember', partOfSpeech: 'verb' };
+    render(<FlashCards wordBank={[bank[0], verb]} progress={fresh} />);
+    tap('Show answer'); tap('Missed it');
+    tap('Show answer'); tap('Missed it');
+    // Each missed card is requeued once; get both right the second time.
+    tap('Show answer'); tap('Got it');
+    tap('Show answer'); tap('Got it');
+    expect(screen.getByText('missed:')).toBeTruthy();
+    expect(screen.getByText('das Haus')).toBeTruthy();
+    expect(screen.getByText('erinnern')).toBeTruthy();
+    expect(screen.queryByText(/^got /)).toBeNull();
   });
 
   it('Study again replays the same cards without grading them', () => {

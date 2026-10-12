@@ -26,3 +26,15 @@ export const SummaryText = styled.p`
   font-variant-numeric: tabular-nums;
   color: ${colors.inkMuted};
 `;
+
+/** Missed words under the "missed:" label. Scrolls inside itself so a long list can't push the buttons off-screen. */
+export const MissedList = styled.ul`
+  max-height: 40vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  font-size: 20px;
+
+  li + li { margin-top: 6px; }
+`;

@@ -42,7 +42,9 @@ describe('FlashCards (sample data)', () => {
     }
     expect(taps).toBe(10); // 9 cards + 1 requeue
     expect(screen.getByText('Session complete')).toBeTruthy();
-    expect(screen.getByText('got 9, missed 1')).toBeTruthy();
+    // The first card (c02 = das Fernweh) was missed; the summary lists it, article included.
+    expect(screen.getByText('missed:')).toBeTruthy();
+    expect(screen.getByText('das Fernweh')).toBeTruthy();
   });
 
   it('"Study again" returns to the first card of the same queue', () => {

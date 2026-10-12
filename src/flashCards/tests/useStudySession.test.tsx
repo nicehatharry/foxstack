@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, cleanup } from '@testing-library/react';
 import { useStudySession } from '../useStudySession';
 import { ACTION_LOCKOUT_MS, MISSED_REQUEUE_GAP } from '../FlashCards.constants';
-import type { Flashcard, Grade, ProgressDocument } from '../FlashCards.types';
+import type { CompletedSession, Flashcard, Grade, ProgressDocument } from '../FlashCards.types';
 
 const card = (id: string): Flashcard => ({ id, german: id, english: id, partOfSpeech: 'verb' });
 const cards = (...ids: string[]) => ids.map(card);
@@ -22,13 +22,14 @@ const wait = () => act(() => { vi.advanceTimersByTime(ACTION_LOCKOUT_MS + 50); }
 const reveal = (r: Hook) => { wait(); act(() => r.current.reveal()); };
 const grade = (r: Hook, g: Grade) => { wait(); act(() => r.current.grade(g)); };
 const revealAndGrade = (r: Hook, g: Grade) => { reveal(r); grade(r, g); };
-const setup = (bank: Flashcard[], progress = fresh) => renderHook(() => useStudySession(bank, progress)).result;
+const setup = (bank: Flashcard[], progress = fresh, last?: CompletedSession) =>
+  renderHook(() => useStudySession(bank, progress, last)).result;
 
 describe('initial state', () => {
   it('starts on the first card, un-flipped, not complete', () => {
     const r = setup(cards('a', 'b', 'c'));
     expect(r.current).toMatchObject({
-      position: 1, total: 3, isFlipped: false, isComplete: false, gotCount: 0, missedCount: 0,
+      position: 1, total: 3, isFlipped: false, isComplete: false, missedCards: [],
     });
     expect(r.current.currentCard?.id).toBe('a');
   });
@@ -66,23 +67,23 @@ describe('grade', () => {
     const r = setup(cards('a', 'b'));
     grade(r, 'got');
     expect(r.current.currentCard?.id).toBe('a');
-    expect(r.current.gotCount).toBe(0);
+    expect(r.current.missedCards).toEqual([]);
     expect(r.current.progressDraft.words.a).toBeUndefined();
   });
-  it('got: advances, un-flips, bumps gotCount, schedules the word', () => {
+  it('got: advances, un-flips, schedules the word, lists nothing as missed', () => {
     const r = setup(cards('a', 'b'));
     revealAndGrade(r, 'got');
     expect(r.current.currentCard?.id).toBe('b');
     expect(r.current.position).toBe(2);
     expect(r.current.isFlipped).toBe(false);
-    expect(r.current.gotCount).toBe(1);
+    expect(r.current.missedCards).toEqual([]);
     expect(r.current.progressDraft.words.a).toMatchObject({ box: 1, lapses: 0 });
     expect(r.current.progressDraft.meta.totalReviews).toBe(1);
   });
-  it('missed: bumps missedCount and records a lapse', () => {
+  it('missed: lists the card as missed and records a lapse', () => {
     const r = setup(cards('a', 'b'));
     revealAndGrade(r, 'missed');
-    expect(r.current.missedCount).toBe(1);
+    expect(r.current.missedCards.map(c => c.id)).toEqual(['a']);
     expect(r.current.progressDraft.words.a).toMatchObject({ box: 1, lapses: 1 });
   });
   it('completes after the last card is got', () => {
@@ -175,43 +176,130 @@ describe('first grade per session decides scheduling', () => {
     revealAndGrade(r, 'got');
     expect(r.current.progressDraft.meta).toEqual({ successRate: 0, totalReviews: 1 });
   });
-  it('the on-screen counters still count every tap', () => {
+  it('a card missed on its first try stays in missedCards even when got on the retry', () => {
     const r = setup(cards('a'));
     revealAndGrade(r, 'missed');
     revealAndGrade(r, 'got');
-    expect(r.current).toMatchObject({ gotCount: 1, missedCount: 1 });
+    expect(r.current.missedCards.map(c => c.id)).toEqual(['a']);
+  });
+  it('missedCards lists each card once, in order of first miss', () => {
+    const r = setup(cards('a', 'b', 'c'));
+    revealAndGrade(r, 'got');    // a
+    revealAndGrade(r, 'missed'); // b -> requeued at the end
+    revealAndGrade(r, 'missed'); // c -> requeued after b
+    revealAndGrade(r, 'missed'); // b again
+    expect(r.current.missedCards.map(c => c.id)).toEqual(['b', 'c']);
   });
 });
 
-describe('restart ("Study again")', () => {
-  it('resets position/counters/flip and replays the initial queue', () => {
+describe('replaySession ("Study again")', () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('after a finished session: resets position/counters/flip and replays its cards, shuffled', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0); // shuffles [a,b] -> [b,a]
     const r = setup(cards('a', 'b'));
     revealAndGrade(r, 'got');
     revealAndGrade(r, 'missed'); // b requeued
     revealAndGrade(r, 'got');
     expect(r.current.isComplete).toBe(true);
+    expect(r.current.canReplay).toBe(true);
     wait();
-    act(() => r.current.restart());
+    act(() => r.current.replaySession());
     expect(r.current).toMatchObject({
-      position: 1, total: 2, isFlipped: false, isComplete: false, gotCount: 0, missedCount: 0,
+      position: 1, total: 2, isFlipped: false, isComplete: false, missedCards: [],
     });
-    expect(r.current.currentCard?.id).toBe('a');
+    expect(r.current.currentCard?.id).toBe('b');
   });
   it('is pure practice: progressDraft is untouched by replayed grades', () => {
     const r = setup(cards('a'));
     revealAndGrade(r, 'got');
     const snapshot = r.current.progressDraft;
     wait();
-    act(() => r.current.restart());
+    act(() => r.current.replaySession());
     revealAndGrade(r, 'got');
     expect(r.current.progressDraft).toBe(snapshot); // same object: no update at all
+    expect(r.current.isComplete).toBe(true);
+  });
+  it('keeps the session id, so currentSession is unchanged', () => {
+    const r = setup(cards('a'));
+    revealAndGrade(r, 'got');
+    const before = r.current.currentSession.sessionId;
+    wait();
+    act(() => r.current.replaySession());
+    expect(r.current.currentSession.sessionId).toBe(before);
   });
   it('is itself subject to the lockout (a double-tap on "Study again" does not reveal)', () => {
     const r = setup(cards('a'));
     revealAndGrade(r, 'got');
     wait();
-    act(() => { r.current.restart(); r.current.reveal(); });
+    act(() => { r.current.replaySession(); });
+    act(() => r.current.reveal());
     expect(r.current.isFlipped).toBe(false);
+  });
+  it('mid-session with no lastSession: nothing to replay', () => {
+    const r = setup(cards('a', 'b'));
+    expect(r.current.canReplay).toBe(false);
+    wait();
+    act(() => r.current.replaySession());
+    expect(r.current.position).toBe(1);
+    expect(r.current.currentCard?.id).toBe('a');
+  });
+});
+
+describe('lastSession (previous session handed in at mount)', () => {
+  const notDue: ProgressDocument = {
+    meta: { successRate: 1, totalReviews: 4 },
+    words: {
+      a: { box: 2, lapses: 0, dueAt: new Date(2026, 8, 30).toISOString(), lastSessionId: 's_prev' },
+      b: { box: 2, lapses: 0, dueAt: new Date(2026, 8, 30).toISOString(), lastSessionId: 's_prev' },
+    },
+  };
+  const last: CompletedSession = { sessionId: 's_prev', cardIds: ['a', 'b', 'gone'] };
+
+  it('canReplay when some of its cards are still in the bank; replays only those, under the old id', () => {
+    const r = setup(cards('a', 'b'), notDue, last);
+    expect(r.current.total).toBe(0);
+    expect(r.current.canReplay).toBe(true);
+    wait();
+    act(() => r.current.replaySession());
+    expect(r.current.total).toBe(2);
+    expect(r.current.currentSession.sessionId).toBe('s_prev');
+    revealAndGrade(r, 'got');
+    expect(r.current.progressDraft).toBe(notDue); // graded under s_prev => ignored
+  });
+  it('cannot replay when none of its cards are in the bank, or without one', () => {
+    expect(setup(cards('x'), fresh, last).current.canReplay).toBe(false);
+    expect(setup(cards('a', 'b'), notDue).current.canReplay).toBe(false);
+  });
+});
+
+describe('newSession ("New Session")', () => {
+  it('starts a study-ahead session under a new id and grades it normally', () => {
+    const progress: ProgressDocument = {
+      meta: { successRate: 1, totalReviews: 4 },
+      words: {
+        a: { box: 2, lapses: 0, dueAt: new Date(2026, 8, 30).toISOString(), lastSessionId: 's_prev' },
+        b: { box: 2, lapses: 0, dueAt: new Date(2026, 8, 30).toISOString(), lastSessionId: 's_prev' },
+      },
+    };
+    const r = setup(cards('a', 'b'), progress);
+    expect(r.current.total).toBe(0);
+    wait();
+    act(() => r.current.newSession());
+    expect(r.current).toMatchObject({ position: 1, total: 2, isFlipped: false, isComplete: false });
+    const id = r.current.currentCard!.id;
+    revealAndGrade(r, 'got');
+    expect(r.current.progressDraft.words[id].box).toBe(3);
+    expect(r.current.progressDraft.words[id].lastSessionId).not.toBe('s_prev');
+  });
+  it('from a finished session: resets counters and begins a new queue', () => {
+    const r = setup(cards('a'));
+    revealAndGrade(r, 'got');
+    const before = r.current.currentSession.sessionId;
+    wait();
+    act(() => r.current.newSession());
+    expect(r.current).toMatchObject({ position: 1, total: 1, isComplete: false, missedCards: [] });
+    expect(r.current.currentSession.sessionId).not.toBe(before);
   });
 });
 

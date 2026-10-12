@@ -11,18 +11,12 @@ export interface StudySession {
   total: number;
   isFlipped: boolean;
   isComplete: boolean;
-  gotCount: number;
-  missedCount: number;
+  /** Cards missed at least once in the current run, in order of first miss, each once (a requeued card missed again isn't repeated). */
+  missedCards: Flashcard[];
   /** Flip to the answer side. One-way; no-op if already flipped. */
   reveal: () => void;
   /** Record a grade and advance. Only valid while the answer is showing. */
   grade: (g: Grade) => void;
-  /**
-   * Replays this session's initial queue for extra practice. Pure practice:
-   * `progressDraft` is not affected (see applyGrade — only a card's first grade
-   * per session schedules it).
-   */
-  restart: () => void;
   /** The session now running (or just finished): its id and initial card ids. Stable until a new session starts. */
   currentSession: CompletedSession;
   /** True if `replaySession` has cards to run: the session just finished, or a previous session's cards still in the word bank. */
@@ -81,8 +75,7 @@ export function useStudySession(
   const [index, setIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [progressDraft, setProgressDraft] = useState<ProgressDocument>(initialProgress);
-  const [gotCount, setGotCount] = useState(0);
-  const [missedCount, setMissedCount] = useState(0);
+  const [missedCards, setMissedCards] = useState<Flashcard[]>([]);
   const lastActionAt = useRef(0);
 
   const total = liveQueue.length;
@@ -110,8 +103,9 @@ export function useStudySession(
     const now = new Date();
     setProgressDraft(prev => applyGrade(prev, currentCard.id, g, now, sessionId));
 
-    if (g === 'got') setGotCount(c => c + 1);
-    else setMissedCount(c => c + 1);
+    if (g === 'missed') {
+      setMissedCards(prev => (prev.some(c => c.id === currentCard.id) ? prev : [...prev, currentCard]));
+    }
 
     setLiveQueue(prev => {
       if (g !== 'missed') return prev;
@@ -132,19 +126,15 @@ export function useStudySession(
     setLiveQueue(queue);
     setIndex(0);
     setIsFlipped(false);
-    setGotCount(0);
-    setMissedCount(0);
+    setMissedCards([]);
   }, []);
-
-  // progressDraft is intentionally left alone: replayed cards already carry
-  // this session's id, so applyGrade ignores their grades.
-  const restart = useCallback(() => resetRun(initialQueue), [resetRun, initialQueue]);
 
   const replaySession = useCallback(() => {
     const cards = isComplete ? initialQueue : replayCards;
     const id = isComplete ? sessionId : lastSession?.sessionId;
     if (!id || cards.length === 0) return;
-    // Reuse the old id: those cards already carry it, so grades are ignored (pure practice).
+    // Reuse the old id: those cards already carry it, so applyGrade ignores their grades
+    // and progressDraft stays untouched (pure practice).
     const queue = shuffle(cards);
     setSession({ id, queue });
     resetRun(queue);
@@ -169,11 +159,9 @@ export function useStudySession(
     total,
     isFlipped,
     isComplete,
-    gotCount,
-    missedCount,
+    missedCards,
     reveal,
     grade,
-    restart,
     currentSession,
     canReplay: isComplete || replayCards.length > 0,
     replaySession,

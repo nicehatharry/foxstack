@@ -42,7 +42,7 @@ flashCards/
 ├── CardPrompt.tsx          front: part-of-speech pill + bare German lemma
 ├── CardAnswer.tsx          back: pill, German (+article, tappable if hasForms), translation ⇄ WordForms, Missed it / Got it
 ├── WordForms.tsx           answer-side forms panel: noun plural/genitive, verb Präsens/Präteritum/Perfekt, adjective comparison
-├── useStudySession.ts      (wordBank, progress, lastSession?) session state: session {id, queue}, index, isFlipped, counters, progressDraft; restart, replaySession, newSession, canReplay, currentSession
+├── useStudySession.ts      (wordBank, progress, lastSession?) session state: session {id, queue}, index, isFlipped, missedCards (unique, first-miss order), progressDraft; replaySession, newSession, canReplay, currentSession
 ├── srs.ts                  pure: dueDateFor, scheduleNext, updateSuccessRate, applyGrade, isDue,
 │                           computeNewCardBudget, interleaveEvenly, buildSessionQueue,
 │                           shuffle, buildStudyAheadQueue
@@ -72,14 +72,14 @@ props (default: sampleDeck / sampleProgress / sampleDeckName)
    ▼
 useStudySession ─▶ buildSessionQueue (ONCE, at mount)
                       │
-                      ├─ currentCard, position, total, isFlipped, isComplete, counters
+                      ├─ currentCard, position, total, isFlipped, isComplete, missedCards
                       │      └─▶ FlashCards.tsx ─▶ FlipCard ─▶ CardPrompt / CardAnswer
                       └─ progressDraft  (srs.applyGrade on each card's FIRST grade per session)
 
 ### Sessions
 - Initial session: buildSessionQueue at mount. Queue/id live in one `session` state, so a new session swaps both.
-- `replaySession` ("Study again"): shuffled cards under the OLD sessionId → pure practice (applyGrade ignores). Source: the just-finished session, else `lastSession.cardIds` ∩ wordBank (read once at mount; supplied by FlashCardsApp from memory, so absent after reload → button hidden).
-- `restart` (hook): same queue, same order, same id; no longer used by the UI.
+- `replaySession` ("Study again"): shuffled cards under the OLD sessionId → pure practice (applyGrade ignores). Source: the just-finished session (replays its initial queue), else `lastSession.cardIds` ∩ wordBank (read once at mount; supplied by FlashCardsApp from memory, so absent after reload → button hidden).
+- Summary: "Session complete" + `missed:` list (`missedCards`; nouns shown with article, others bare lemma) or "No words missed."; reset on any new run.
 - Options UI (`renderSessionOptions`): [Study again] + New Session, shown in both the "Session complete" and "Nothing due" states.
 - `newSession` ("New Session"): buildStudyAheadQueue (ignores due dates: never-graded first, then soonest `dueAt`, ≤ SESSION_CARD_CAP, shuffled) under a NEW sessionId → graded normally (boxes advance).
 - `onSessionComplete(currentSession)` fires per completion of any session type.
