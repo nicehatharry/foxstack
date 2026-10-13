@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { createDeck, withCard, withProgress } from './decks';
+import { createDeck, withCard, withCopiedCard, withProgress, withSavedCard, withoutCard } from './decks';
 import type { CardDraft, DeckRecord } from './decks';
-import type { ProgressDocument } from './FlashCards.types';
+import type { Flashcard, ProgressDocument } from './FlashCards.types';
 
 /**
  * Holds every deck and its progress. Like useStudySession, `initialDecks` is
@@ -37,5 +37,18 @@ export function useDeckLibrary(
     setDecks((prev) => withCard(prev, deckId, draft));
   }, []);
 
-  return { decks, addDeck, addCard, saveProgress };
+  /** Manage page: upsert a complete card (with forms). */
+  const saveCard = useCallback((deckId: string, card: Flashcard) => {
+    setDecks((prev) => withSavedCard(prev, deckId, card));
+  }, []);
+
+  const deleteCard = useCallback((deckId: string, id: string) => {
+    setDecks((prev) => withoutCard(prev, deckId, id));
+  }, []);
+
+  const copyCard = useCallback((fromDeckId: string, id: string, toDeckId: string) => {
+    setDecks((prev) => withCopiedCard(prev, fromDeckId, id, toDeckId));
+  }, []);
+
+  return { decks, addDeck, addCard, saveProgress, saveCard, deleteCard, copyCard };
 }

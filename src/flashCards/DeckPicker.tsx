@@ -6,20 +6,23 @@ import type { DeckRecord } from './decks';
 import { AppShell } from './styles/layout';
 import { TopBar, TopBarRow, AppTitle } from './styles/header';
 import { Actions, PrimaryBtn, EmptyState } from './styles/actions';
-import { DeckList, DeckRow, DeckName, DeckMeta } from './styles/decks';
+import { BackBtn, DeckList, DeckRow, DeckName, DeckMeta } from './styles/decks';
 
 export interface DeckPickerProps {
   decks: DeckRecord[];
   onSelect: (deckId: string) => void;
   onCreate: () => void;
+  /** Opens the Manage words page. Link hidden when absent. */
+  onManage?: () => void;
 }
 
 /** First screen: pick which deck to study, or start a new one. Presentational. */
-export const DeckPicker: React.FC<DeckPickerProps> = ({ decks, onSelect, onCreate }) => (
+export const DeckPicker: React.FC<DeckPickerProps> = ({ decks, onSelect, onCreate, onManage }) => (
   <AppShell>
     <TopBar>
       <TopBarRow>
         <AppTitle>Choose a deck</AppTitle>
+        {onManage && <BackBtn type="button" onClick={onManage}>Manage words</BackBtn>}
       </TopBarRow>
     </TopBar>
     {decks.length === 0 ? (

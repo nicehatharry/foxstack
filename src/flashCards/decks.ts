@@ -17,7 +17,8 @@ export interface DeckRecord {
 /**
  * What the create-deck form collects for one card. Deliberately minimal: no
  * `forms`. Forms are authored, reviewed strings (context §2), so a card made in
- * the app has none and reads as "no forms yet" (the known gap in context §8).
+ * the quick-add forms has none and reads as "no forms yet" (the known gap in
+ * context §8); the Manage words page (cardForm.ts / WordEditor.tsx) authors them.
  */
 export type CardDraft = { german: string; english: string } & (
   | { partOfSpeech: 'noun'; article: NounArticle }
@@ -84,19 +85,72 @@ export function withProgress(
 }
 
 /**
+ * The first `cNN` free in BOTH the word bank and the progress map, so a card can
+ * never inherit the SRS state of an orphaned progress entry (context §7).
+ */
+export function nextCardId(deck: DeckRecord): string {
+  const used = new Set([...deck.wordBank.map((c) => c.id), ...Object.keys(deck.progress.words)]);
+  let n = deck.wordBank.length;
+  while (used.has(cardId(n))) n += 1;
+  return cardId(n);
+}
+
+/**
  * Append one card to one deck; every other deck keeps its identity. The new id is
- * the first `cNN` free in BOTH the word bank and the progress map, so a card can
- * never inherit the SRS state of an orphaned progress entry (context §7). The new
- * word has no progress record, so it is "new" from the next session on.
+ * `nextCardId`. The new word has no progress record, so it is "new" from the next
+ * session on.
  */
 export function withCard(decks: DeckRecord[], deckId: string, draft: CardDraft): DeckRecord[] {
+  return decks.map((deck) =>
+    deck.id === deckId
+      ? { ...deck, wordBank: [...deck.wordBank, draftToCard(nextCardId(deck), draft)] }
+      : deck,
+  );
+}
+
+/**
+ * Upsert a complete card (with `forms`) by id: replaced in place if present,
+ * appended otherwise (caller allocates new ids via `nextCardId`). Progress is
+ * untouched, so an edited word keeps its SRS state.
+ */
+export function withSavedCard(decks: DeckRecord[], deckId: string, card: Flashcard): DeckRecord[] {
   return decks.map((deck) => {
     if (deck.id !== deckId) return deck;
-    const used = new Set([...deck.wordBank.map((c) => c.id), ...Object.keys(deck.progress.words)]);
-    let n = deck.wordBank.length;
-    while (used.has(cardId(n))) n += 1;
-    return { ...deck, wordBank: [...deck.wordBank, draftToCard(cardId(n), draft)] };
+    const exists = deck.wordBank.some((c) => c.id === card.id);
+    return {
+      ...deck,
+      wordBank: exists
+        ? deck.wordBank.map((c) => (c.id === card.id ? card : c))
+        : [...deck.wordBank, card],
+    };
   });
+}
+
+/** Remove a card and its progress entry (so the id is never inherited by a later card). */
+export function withoutCard(decks: DeckRecord[], deckId: string, id: string): DeckRecord[] {
+  return decks.map((deck) => {
+    if (deck.id !== deckId) return deck;
+    const words = { ...deck.progress.words };
+    delete words[id];
+    return {
+      ...deck,
+      wordBank: deck.wordBank.filter((c) => c.id !== id),
+      progress: { ...deck.progress, words },
+    };
+  });
+}
+
+/** Copy a card into another deck under a fresh id there. No progress carried: it is a new word in the target. */
+export function withCopiedCard(
+  decks: DeckRecord[],
+  fromDeckId: string,
+  id: string,
+  toDeckId: string,
+): DeckRecord[] {
+  const card = decks.find((d) => d.id === fromDeckId)?.wordBank.find((c) => c.id === id);
+  const target = decks.find((d) => d.id === toDeckId);
+  if (!card || !target) return decks;
+  return withSavedCard(decks, toDeckId, { ...card, id: nextCardId(target) });
 }
 
 /** "4 of 9 cards started". Progress ids absent from the word bank are ignored (context §7). */
