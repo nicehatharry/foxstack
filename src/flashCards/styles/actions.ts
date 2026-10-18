@@ -81,6 +81,8 @@ export const GradeRow = styled.div`
 export const EmptyState = styled.div`
   display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: 8px;
   align-items: center;
   justify-content: center;
   padding: 24px;

@@ -36,6 +36,7 @@ describe('FlashCards page states', () => {
     };
     render(<FlashCards wordBank={[one]} progress={progress} />);
     expect(screen.getByText(/Nothing due right now/)).toBeTruthy();
+    expect(screen.getByText('More cards due Wednesday, September 30th.')).toBeTruthy();
     expect(screen.queryByText('Session complete')).toBeNull();
     // No previous session was handed in, so only "New Session" is offered.
     expect(screen.getByText('New Session')).toBeTruthy();

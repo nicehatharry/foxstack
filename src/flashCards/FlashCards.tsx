@@ -8,6 +8,7 @@ import { sampleProgress } from './sampleProgress';
 import type { CompletedSession, Flashcard, ProgressDocument } from './FlashCards.types';
 import type { CardDraft } from './decks';
 import { AddWordSheet } from './AddWordSheet';
+import { formatDueDay, nextDueAt } from './srs';
 
 import { AppShell } from './styles/layout';
 import { TopBarRow, AppTitle, Progress } from './styles/header';
@@ -161,9 +162,13 @@ const FlashCards: React.FC<FlashCardsProps> = ({
     }
 
     // Word bank has cards, but nothing is due and no new words are queued.
+    const nextDue = nextDueAt(wordBank, progressDraft.words, new Date());
     return (
       <>
-        <EmptyState>Nothing due right now — check back later.</EmptyState>
+        <EmptyState>
+          <span>Nothing due right now.</span>
+          {nextDue && <span>More cards due {formatDueDay(nextDue)}.</span>}
+        </EmptyState>
         {renderSessionOptions()}
       </>
     );

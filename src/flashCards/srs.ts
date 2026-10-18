@@ -100,6 +100,32 @@ export function applyGrade(
   };
 }
 
+/**
+ * The soonest upcoming due moment among the word bank's graded words (strictly
+ * after `now`), or null if there is none. Words with no record are skipped.
+ * Pure.
+ */
+export function nextDueAt(wordBank: Flashcard[], progress: ProgressMap, now: Date): Date | null {
+  let soonest: number | null = null;
+  for (const w of wordBank) {
+    const record = progress[w.id];
+    if (!record) continue;
+    const t = new Date(record.dueAt).getTime();
+    if (t > now.getTime() && (soonest === null || t < soonest)) soonest = t;
+  }
+  return soonest === null ? null : new Date(soonest);
+}
+
+/** Local calendar day as e.g. "Tuesday, October 20th". English only. Pure. */
+export function formatDueDay(date: Date): string {
+  const day = date.getDate();
+  const teen = day % 100 >= 11 && day % 100 <= 13;
+  const suffix = teen ? 'th' : (['th', 'st', 'nd', 'rd'][day % 10] ?? 'th');
+  const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+  const month = date.toLocaleDateString('en-US', { month: 'long' });
+  return `${weekday}, ${month} ${day}${suffix}`;
+}
+
 /** True if a word is eligible to appear in *this* session. */
 export function isDue(progress: WordProgress | undefined, now: Date, sessionId: string): boolean {
   if (!progress) return false; // no record yet = "new", not "due"

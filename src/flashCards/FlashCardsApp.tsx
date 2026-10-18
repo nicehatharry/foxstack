@@ -21,8 +21,6 @@ export interface FlashCardsAppProps {
    * change that caused it. Never on mount. Persistence seam: wire to a flush.
    */
   onCheckpoint?: () => void;
-  /** Opens the Manage words page (routing lives in FlashCardsRoot). Link hidden when absent. */
-  onManage?: () => void;
 }
 
 const defaultDecks: DeckRecord[] = [
@@ -49,7 +47,6 @@ const FlashCardsApp: React.FC<FlashCardsAppProps> = ({
   initialDecks = defaultDecks,
   onLibraryChange,
   onCheckpoint,
-  onManage,
 }) => {
   const { decks, addDeck, addCard, saveProgress } = useDeckLibrary(initialDecks, onLibraryChange);
   const [view, setView] = useState<View>({ kind: 'picker' });
@@ -113,7 +110,6 @@ const FlashCardsApp: React.FC<FlashCardsAppProps> = ({
         decks={decks}
         onSelect={(deckId) => setView({ kind: 'study', deckId })}
         onCreate={() => setView({ kind: 'create' })}
-        onManage={onManage}
       />
     );
   };

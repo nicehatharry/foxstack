@@ -29,6 +29,7 @@ describe('"Nothing due" actions', () => {
   it('offers Study again and New Session when the previous session is known', () => {
     render(<FlashCards wordBank={bank} progress={progress} lastSession={last} />);
     expect(screen.getByText(/Nothing due right now/)).toBeTruthy();
+    expect(screen.getByText(/^More cards due Wednesday, September 30th\.$/)).toBeTruthy();
     expect(screen.getByText('Study again')).toBeTruthy();
     expect(screen.getByText('New Session')).toBeTruthy();
   });
