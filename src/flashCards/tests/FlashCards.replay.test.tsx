@@ -118,6 +118,8 @@ describe('Session complete options', () => {
     expect(screen.getByText('Study again')).toBeTruthy();
     expect(screen.getByText('New Session')).toBeTruthy();
     expect(screen.getByText('No words missed.')).toBeTruthy();
+    // Got on 2026-09-23 => box 1 => due the next day.
+    expect(screen.getByText('Next cards due Thursday, September 24th.')).toBeTruthy();
   });
 
   it('lists missed words: nouns with their article, other parts of speech bare', () => {

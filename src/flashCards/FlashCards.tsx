@@ -114,6 +114,8 @@ const FlashCards: React.FC<FlashCardsProps> = ({
   );
 
   const renderBody = () => {
+    const nextDue = nextDueAt(wordBank, progressDraft.words, new Date());
+
     if (currentCard) {
       return (
         <>
@@ -151,6 +153,7 @@ const FlashCards: React.FC<FlashCardsProps> = ({
             ) : (
               <SummaryText>No words missed.</SummaryText>
             )}
+            {nextDue && <SummaryText>Next cards due {formatDueDay(nextDue)}.</SummaryText>}
           </SummaryState>
           {renderSessionOptions()}
         </>
@@ -162,7 +165,6 @@ const FlashCards: React.FC<FlashCardsProps> = ({
     }
 
     // Word bank has cards, but nothing is due and no new words are queued.
-    const nextDue = nextDueAt(wordBank, progressDraft.words, new Date());
     return (
       <>
         <EmptyState>
