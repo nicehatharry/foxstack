@@ -23,10 +23,10 @@ describe('FlashCards (sample data)', () => {
     expect(q.map(c => c.id)).toEqual(['c02', 'c05', 'c06', 'c01', 'c07', 'c08', 'c04', 'c09', 'c10']);
   });
 
-  it('shows the title, the first prompt without its article, and "1 of 9"', () => {
+  it('shows the title, the first prompt without its article, and "8 remaining"', () => {
     render(<FlashCards />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Everyday German');
-    expect(screen.getByText(/^1 of 9$/)).toBeTruthy();
+    expect(screen.getByText(/^8 remaining$/)).toBeTruthy();
     // c02 = das Fernweh. Prompt face shows the bare lemma; the article only appears on the answer face.
     expect(screen.getAllByText('Fernweh')).toHaveLength(1);
     expect(screen.getByText('das Fernweh')).toBeTruthy();
@@ -53,7 +53,7 @@ describe('FlashCards (sample data)', () => {
     for (let i = 0; i < 9; i++) { tap('Show answer'); tap('Got it'); }
     expect(screen.getByText('Session complete')).toBeTruthy();
     tap('Study again');
-    expect(screen.getByText(/^1 of 9$/)).toBeTruthy();
+    expect(screen.getByText(/^8 remaining$/)).toBeTruthy();
     expect(screen.queryByText('Session complete')).toBeNull();
   });
 
@@ -69,7 +69,7 @@ describe('FlashCards (sample data)', () => {
     expect(screen.getByText(/no plural form/i)).toBeTruthy();
     // Grading is still available while the panel is open, and the card hasn't advanced.
     expect(screen.getByText('Missed it')).toBeTruthy();
-    expect(screen.getByText(/^1 of 9$/)).toBeTruthy();
+    expect(screen.getByText(/^8 remaining$/)).toBeTruthy();
 
     tap('das Fernweh');
     expect(screen.getByText('longing for faraway places')).toBeTruthy();
@@ -80,7 +80,7 @@ describe('FlashCards (sample data)', () => {
     render(<FlashCards />);
     // Queue is c02,c05,c06,c01,c07,... — 4 grades lands on c07 (Rücksichtnahme), which has no `forms` at all.
     for (let i = 0; i < 4; i++) { tap('Show answer'); tap('Got it'); }
-    expect(screen.getByText(/^5 of 9$/)).toBeTruthy();
+    expect(screen.getByText(/^4 remaining$/)).toBeTruthy();
     const german = screen.getByText('die Rücksichtnahme');
     expect(german.tagName).toBe('P');
   });

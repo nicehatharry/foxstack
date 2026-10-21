@@ -49,7 +49,7 @@ describe('FlashCards page states', () => {
     tap('Show answer');
     tap('Missed it');
     const after = container.querySelector('article');
-    expect(screen.getByText(/^2 of 2$/)).toBeTruthy();   // same card, requeued
+    expect(screen.getByText(/^0 remaining$/)).toBeTruthy();   // same card, requeued
     expect(after).not.toBe(before);                       // key changed => remounted, un-flipped, re-animated
     expect(container.querySelector('article[aria-hidden="true"]')).toBeNull(); // new card starts un-flipped
   });
@@ -62,10 +62,10 @@ describe('FlashCards page states', () => {
   it('reads its deck once: new props after mount are ignored until remounted with a new key', () => {
     const two: Flashcard = { id: 'x2', german: 'Baum', english: 'tree', partOfSpeech: 'noun', article: 'der' };
     const { rerender } = render(<FlashCards key="a" wordBank={[one]} progress={fresh} />);
-    expect(screen.getByText(/^1 of 1$/)).toBeTruthy();
+    expect(screen.getByText(/^0 remaining$/)).toBeTruthy();
     rerender(<FlashCards key="a" wordBank={[one, two]} progress={fresh} />);
-    expect(screen.getByText(/^1 of 1$/)).toBeTruthy();           // ignored
+    expect(screen.getByText(/^0 remaining$/)).toBeTruthy();           // ignored
     rerender(<FlashCards key="b" wordBank={[one, two]} progress={fresh} />);
-    expect(screen.getByText(/^1 of 2$/)).toBeTruthy();           // remounted with the new deck
+    expect(screen.getByText(/^1 remaining$/)).toBeTruthy();           // remounted with the new deck
   });
 });

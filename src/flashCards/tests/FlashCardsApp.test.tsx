@@ -53,7 +53,7 @@ describe('FlashCardsApp: picking a deck', () => {
   it('opens the chosen deck, and its back button returns to the picker', () => {
     render(<FlashCardsApp initialDecks={makeDecks()} />);
     openDeck(/Animals/);
-    expect(screen.getByText('1 of 2')).toBeTruthy();
+    expect(screen.getByText('1 remaining')).toBeTruthy();
     expect(screen.queryByText('Choose a deck')).toBeNull();
     backToPicker();
     expect(screen.getByText('Choose a deck')).toBeTruthy();
@@ -79,7 +79,7 @@ describe('FlashCardsApp: progress is tracked per deck', () => {
 
     // Hund is now scheduled for tomorrow, so only Katze is left to study.
     openDeck(/Animals/);
-    expect(screen.getByText('1 of 1')).toBeTruthy();
+    expect(screen.getByText('0 remaining')).toBeTruthy();
   });
 
   it('reports the library on change but never on mount', async () => {

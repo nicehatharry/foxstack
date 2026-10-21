@@ -133,7 +133,7 @@ describe('add-word "+" on the study page', () => {
     expect((screen.getByLabelText('German') as HTMLInputElement).value).toBe('');
     expect(screen.getByRole('status').textContent).toMatch(/der Hund: dog/);
     fireEvent.click(screen.getByText('Done'));
-    expect(screen.getByText(/^1 of 1$/)).toBeTruthy(); // queue is fixed at mount
+    expect(screen.getByText(/^0 remaining$/)).toBeTruthy(); // queue is fixed at mount
   });
 
   it('will not submit with a blank field', () => {
@@ -146,13 +146,13 @@ describe('add-word "+" on the study page', () => {
 });
 
 describe('FlashCardsApp: adding a word to an existing deck', () => {
-  it('saves it to the library, keeps this session at "1 of 1", and offers it next time the deck is opened', () => {
+  it('saves it to the library, keeps this session at "0 remaining", and offers it next time the deck is opened', () => {
     const onLibraryChange = vi.fn();
     const deck: DeckRecord = { id: 'd1', name: 'Kitchen', wordBank: [one], progress: fresh() };
     render(<FlashCardsApp initialDecks={[deck]} onLibraryChange={onLibraryChange} />);
 
     fireEvent.click(screen.getByText('Kitchen'));
-    expect(screen.getByText(/^1 of 1$/)).toBeTruthy();
+    expect(screen.getByText(/^0 remaining$/)).toBeTruthy();
     fireEvent.click(addBtn());
     fillAndAdd('Hund', 'dog');
     fireEvent.click(screen.getByText('Done'));
@@ -161,10 +161,10 @@ describe('FlashCardsApp: adding a word to an existing deck', () => {
       ? (onLibraryChange.mock.calls[onLibraryChange.mock.calls.length - 1][0] as DeckRecord[])
       : [];
     expect(saved[0].wordBank.map(c => c.id)).toEqual(['x1', 'c02']);
-    expect(screen.getByText(/^1 of 1$/)).toBeTruthy();
+    expect(screen.getByText(/^0 remaining$/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Back to decks' }));
     fireEvent.click(screen.getByText('Kitchen'));
-    expect(screen.getByText(/^1 of 2$/)).toBeTruthy();
+    expect(screen.getByText(/^1 remaining$/)).toBeTruthy();
   });
 });

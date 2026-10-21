@@ -191,7 +191,7 @@ const FlashCards: React.FC<FlashCardsProps> = ({
               <AppTitle>{deckName}</AppTitle>
             )}
             <HeaderEnd>
-              {currentCard && <Progress>{position} of {total}</Progress>}
+              {currentCard && <Progress>{total - position} remaining</Progress>}
               {onAddCard && (
                 <AddWordBtn
                   ref={addBtnRef}

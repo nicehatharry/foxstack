@@ -51,7 +51,7 @@ describe('Study again', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0); // shuffles [a,b,c] -> [b,c,a]
     render(<FlashCards wordBank={bank} progress={progress} lastSession={last} />);
     tap('Study again');
-    expect(screen.getByText(/^1 of 3$/)).toBeTruthy();
+    expect(screen.getByText(/^2 remaining$/)).toBeTruthy();
     expect(screen.getByText('Baum')).toBeTruthy();
     expect(screen.queryByText(/Nothing due/)).toBeNull();
   });
@@ -84,7 +84,7 @@ describe('New Session', () => {
     const onProgressChange = vi.fn();
     render(<FlashCards wordBank={[bank[0]]} progress={{ ...progress, words: { a: progress.words.a } }} onProgressChange={onProgressChange} />);
     tap('New Session');
-    expect(screen.getByText(/^1 of 1$/)).toBeTruthy();
+    expect(screen.getByText(/^0 remaining$/)).toBeTruthy();
     tap('Show answer');
     tap('Got it');
     expect(onProgressChange).toHaveBeenCalledTimes(1);
@@ -142,7 +142,7 @@ describe('Session complete options', () => {
     finish();
     expect(onProgressChange).toHaveBeenCalledTimes(1);
     tap('Study again');
-    expect(screen.getByText(/^1 of 1$/)).toBeTruthy();
+    expect(screen.getByText(/^0 remaining$/)).toBeTruthy();
     finish();
     expect(onProgressChange).toHaveBeenCalledTimes(1);
   });
@@ -151,7 +151,7 @@ describe('Session complete options', () => {
     render(<FlashCards wordBank={one} progress={fresh} />);
     finish();
     tap('New Session');
-    expect(screen.getByText(/^1 of 1$/)).toBeTruthy();
+    expect(screen.getByText(/^0 remaining$/)).toBeTruthy();
     expect(screen.queryByText('Session complete')).toBeNull();
   });
 });
