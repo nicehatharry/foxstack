@@ -66,7 +66,7 @@ flashCards/
 ├── animations.ts           cardIn
 ├── sampleDeck.ts / sampleProgress.ts   first-run library (no library.json in S3) and component defaults
 ├── GlobalStyle.ts          reset + @fontsource imports
-├── services/s3Storage.ts   loadLibrary(): DeckRecord[] | null (null = key absent); saveLibrary(decks, { unloading? }). Only SDK importer (via LibraryGate / roots).
+├── services/s3Storage.ts   loadLibrary(): DeckRecord[] | null (null = key absent); saveLibrary(decks, { unloading? }); in-flight saves tracked module-level, loadLibrary awaits them (Manage→Cards read-after-write). Only SDK importer (via LibraryGate / roots).
 ├── styles/                 actions, addWord, card, decks, forms, header, layout, manage (ManageShell max 1100px; split pane ≥ 900px, phone = list→editor push via $editing), summary, sync, tokens
 └── tests/                  AddWord, CardAnswer, cardForm, decks, decks.manage, FlashCards.states, FlashCards.replay, FlashCards, FlashCards.utils, FlashCardsApp,
                             FlashCardsApp.checkpoint, FlipCard, srs, srs.session, s3Storage, useLibrarySync, useStudySession, WordForms — import source via `../`

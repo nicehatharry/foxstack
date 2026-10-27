@@ -27,6 +27,11 @@
  *    client instead of awaiting fetchAuthSession(), and (b) uses a `keepalive`
  *    client when the body fits the browser's 64 KB keepalive cap. Still
  *    best-effort: nothing can guarantee a request survives teardown.
+ *
+ * 6. READ-AFTER-WRITE ACROSS ROUTES — saves in flight are tracked at module
+ *    level (survives route unmounts). `loadLibrary` awaits them first, so
+ *    navigating Manage → Cards right after a Save can't read the pre-save
+ *    library and later overwrite it (last-write-wins).
  */
 
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
@@ -101,6 +106,7 @@ const isLibrary = (value: unknown): value is DeckRecord[] =>
  * run). Throws on any other failure, including a malformed document.
  */
 export async function loadLibrary(): Promise<DeckRecord[] | null> {
+  await Promise.allSettled([...pendingSaves]);
   const { normal } = await getClients();
 
   let raw: string;
@@ -120,8 +126,21 @@ export async function loadLibrary(): Promise<DeckRecord[] | null> {
   return parsed;
 }
 
+const pendingSaves = new Set<Promise<void>>();
+
 /** Overwrite the library (last-write-wins). Throws on failure. */
-export async function saveLibrary(
+export function saveLibrary(
+  decks: DeckRecord[],
+  options: { unloading?: boolean } = {},
+): Promise<void> {
+  const write = putLibrary(decks, options);
+  pendingSaves.add(write);
+  const settle = () => { pendingSaves.delete(write); };
+  write.then(settle, settle);
+  return write;
+}
+
+async function putLibrary(
   decks: DeckRecord[],
   { unloading = false }: { unloading?: boolean } = {},
 ): Promise<void> {
